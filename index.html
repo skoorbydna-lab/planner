@@ -454,7 +454,7 @@ label.field-label{
 @media (max-width:860px){
   .tt-grid{grid-template-columns:70px repeat(5, minmax(84px,1fr));font-size:11px;overflow-x:auto;}
   .tt-grid{display:grid;}
-  .main{overflow-x:hidden;}
+  .main{overflow-x:hidden;overflow-y:visible;}
 }
 .tt-scroll{overflow-x:auto;}
 
@@ -1627,11 +1627,14 @@ function importData(e){
    area gets more room while reading a long page.
    ====================================================================== */
 (function initAutoHideNav(){
-  let lastY = window.scrollY;
+  function currentY(){
+    return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  }
+  let lastY = currentY();
   const THRESHOLD = 10;   // ignore tiny scroll jitter
   const TOP_ZONE = 60;    // always show near the very top of the page
-  window.addEventListener('scroll', ()=>{
-    const y = window.scrollY;
+  function onScroll(){
+    const y = currentY();
     if(y < TOP_ZONE){
       document.body.classList.remove('nav-hidden');
     }else if(y - lastY > THRESHOLD){
@@ -1640,7 +1643,9 @@ function importData(e){
       document.body.classList.remove('nav-hidden');
     }
     lastY = y;
-  }, {passive:true});
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  document.addEventListener('scroll', onScroll, {passive:true});
   document.getElementById('nav-reveal').addEventListener('click', ()=>{
     document.body.classList.remove('nav-hidden');
   });
