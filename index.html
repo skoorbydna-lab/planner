@@ -177,14 +177,21 @@ body.nav-hidden .main{ margin-left:0; }
     position:fixed;
     top:0; left:0;
     z-index:30;
-    flex-direction:row;
     align-items:center;
-    padding:10px 10px;
-    overflow-x:auto;
-    gap:2px;
+    padding:0 10px;
+    overflow:hidden;
   }
   body.nav-hidden .sidebar{ transform:translateY(-100%); }
   .sidebar-brand,.sidebar-sub,.sidebar-foot{display:none;}
+  #nav-items{
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:2px;
+    overflow-x:auto;
+    height:100%;
+    flex:1;
+  }
   .nav-item{width:auto;white-space:nowrap;flex-shrink:0;}
   .main{margin-left:0;margin-top:58px;padding:20px 16px 70px;}
   body.nav-hidden .main{margin-top:0;}
