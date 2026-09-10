@@ -895,6 +895,7 @@ const NAV = [
 
 let state = {
   route: 'dashboard',
+  dashboardDate: new Date(),
   weekViewMonday: getMonday(new Date()),
   dailyDate: new Date(),
   planClass: null,
@@ -903,6 +904,7 @@ let state = {
 
 function navigate(route){
   state.route = route;
+  if(route==='dashboard') state.dashboardDate = new Date();
   render();
   window.scrollTo(0,0);
 }
@@ -935,7 +937,8 @@ function render(){
    DASHBOARD
    ====================================================================== */
 function renderDashboard(){
-  const today = new Date();
+  const today = state.dashboardDate;
+  const isActualToday = toISO(today)===toISO(new Date());
   const dKey = dayKeyOf(today);
   const wType = weekTypeFor(today);
   const todayISO = toISO(today);
@@ -980,10 +983,16 @@ function renderDashboard(){
   const wk = weekOf(todayISO);
   const weekEventsHtml = wk ? renderWeekEventsList(wk) : `<div class="empty-note">No calendar data for this week.</div>`;
 
+  const dayLabel = isSchoolDay ? (isActualToday ? 'Today' : '') : 'Weekend';
   return `
     <div class="page-head">
-      <p class="page-eyebrow">${isSchoolDay? 'Today' : 'Weekend'} · Week ${wType}</p>
+      <p class="page-eyebrow">${dayLabel? dayLabel+' · ' : ''}Week ${wType}</p>
       <h1 class="page-title">${fmtLong(today)}</h1>
+    </div>
+    <div class="day-picker" style="margin-top:-14px;">
+      <button class="icon-btn" id="dash-prev">${ICONS.chevL}</button>
+      <button class="icon-btn" id="dash-next">${ICONS.chevR}</button>
+      ${!isActualToday? `<button class="btn btn-sm" id="dash-today">Today</button>` : ''}
     </div>
     <div class="dash-grid">
       <div class="card" style="padding:20px 22px;">
@@ -1449,6 +1458,10 @@ function attachRouteHandlers(){
     document.querySelectorAll('.after-edit-trigger').forEach(el=>{
       el.addEventListener('click', ()=>openAfterModal(el.dataset.date));
     });
+    document.getElementById('dash-prev').onclick = ()=>{ state.dashboardDate = addDays(state.dashboardDate,-1); render(); };
+    document.getElementById('dash-next').onclick = ()=>{ state.dashboardDate = addDays(state.dashboardDate,1); render(); };
+    const dashToday = document.getElementById('dash-today');
+    if(dashToday) dashToday.onclick = ()=>{ state.dashboardDate = new Date(); render(); };
   }
 
   if(state.route==='weekly'){
