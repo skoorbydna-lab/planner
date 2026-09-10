@@ -27,6 +27,20 @@
   --brick-wash:#F1DFD9;
   --slate:#3D5670;
   --slate-wash:#E3E9EE;
+  --teal:#2C6E6B;
+  --teal-wash:#DDEBEA;
+  --navy:#2E4B6B;
+  --navy-wash:#DCE4EC;
+  --plum:#6B4468;
+  --plum-wash:#ECE0EA;
+  --rust:#B15C2E;
+  --rust-wash:#F3E4D6;
+  --olive:#6E6B2E;
+  --olive-wash:#EDEBD9;
+  --clay:#A85A3E;
+  --clay-wash:#F1E1D8;
+  --berry:#7A3B54;
+  --berry-wash:#EEE0E6;
   --sidebar-bg:#20272C;
   --sidebar-ink:#C9CFC9;
   --sidebar-active:#31513B;
@@ -56,7 +70,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:fo
 
 /* ============================= LAYOUT ============================= */
 #app{
-  display:flex;
+  display:block;
   min-height:100vh;
 }
 .sidebar{
@@ -67,10 +81,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:fo
   display:flex;
   flex-direction:column;
   padding:22px 14px;
-  position:sticky;
+  position:fixed;
+  left:0;
   top:0;
   height:100vh;
+  z-index:30;
+  transition:transform .28s ease;
 }
+body.nav-hidden .sidebar{ transform:translateX(-100%); }
+.nav-reveal{
+  position:fixed;
+  left:14px;
+  top:14px;
+  z-index:31;
+  width:38px;height:38px;
+  border-radius:9px;
+  border:1px solid var(--line);
+  background:var(--paper-card);
+  box-shadow:var(--shadow);
+  display:none;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.nav-reveal svg{width:17px;height:17px;color:var(--ink);}
+body.nav-hidden .nav-reveal{display:flex;}
 .sidebar-brand{
   font-family:var(--font-display);
   font-size:19px;
@@ -112,11 +146,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:fo
 }
 
 .main{
-  flex:1;
-  min-width:0;
+  margin-left:224px;
   padding:34px 40px 80px;
   max-width:1180px;
+  transition:margin-left .28s ease;
 }
+body.nav-hidden .main{ margin-left:0; }
 .page-head{
   margin-bottom:26px;
 }
@@ -135,22 +170,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:fo
 
 /* mobile: sidebar becomes a top scroll bar */
 @media (max-width:860px){
-  #app{flex-direction:column;}
+  #app{}
   .sidebar{
     width:100%;
-    height:auto;
-    position:sticky;
-    top:0;
-    z-index:20;
+    height:58px;
+    position:fixed;
+    top:0; left:0;
+    z-index:30;
     flex-direction:row;
     align-items:center;
-    padding:12px 10px;
+    padding:10px 10px;
     overflow-x:auto;
     gap:2px;
   }
+  body.nav-hidden .sidebar{ transform:translateY(-100%); }
   .sidebar-brand,.sidebar-sub,.sidebar-foot{display:none;}
   .nav-item{width:auto;white-space:nowrap;flex-shrink:0;}
-  .main{padding:20px 16px 70px;}
+  .main{margin-left:0;margin-top:58px;padding:20px 16px 70px;}
+  body.nav-hidden .main{margin-top:0;}
   .page-title{font-size:24px;}
 }
 
@@ -230,7 +267,52 @@ label.field-label{
 .pill-gold{background:var(--gold-wash);color:var(--gold);}
 .pill-brick{background:var(--brick-wash);color:var(--brick);}
 .pill-slate{background:var(--slate-wash);color:var(--slate);}
+.pill-teal{background:var(--teal-wash);color:var(--teal);}
+.pill-navy{background:var(--navy-wash);color:var(--navy);}
+.pill-plum{background:var(--plum-wash);color:var(--plum);}
+.pill-rust{background:var(--rust-wash);color:var(--rust);}
+.pill-olive{background:var(--olive-wash);color:var(--olive);}
+.pill-clay{background:var(--clay-wash);color:var(--clay);}
+.pill-berry{background:var(--berry-wash);color:var(--berry);}
 .pill-muted{background:var(--paper-dim);color:var(--ink-soft);}
+
+/* class colour-coding: a soft wash background + solid left accent bar,
+   used on timetable cells / period rows / plan tabs so each class reads
+   at a glance without needing to read the label. */
+.cc-forest{background:var(--forest-wash);border-left:3px solid var(--forest);}
+.cc-gold{background:var(--gold-wash);border-left:3px solid var(--gold);}
+.cc-brick{background:var(--brick-wash);border-left:3px solid var(--brick);}
+.cc-slate{background:var(--slate-wash);border-left:3px solid var(--slate);}
+.cc-teal{background:var(--teal-wash);border-left:3px solid var(--teal);}
+.cc-navy{background:var(--navy-wash);border-left:3px solid var(--navy);}
+.cc-plum{background:var(--plum-wash);border-left:3px solid var(--plum);}
+.cc-rust{background:var(--rust-wash);border-left:3px solid var(--rust);}
+.cc-olive{background:var(--olive-wash);border-left:3px solid var(--olive);}
+.cc-clay{background:var(--clay-wash);border-left:3px solid var(--clay);}
+.cc-berry{background:var(--berry-wash);border-left:3px solid var(--berry);}
+.cc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:6px;}
+.cc-dot.cc-forest{background:var(--forest);border-left:none;}
+.cc-dot.cc-gold{background:var(--gold);border-left:none;}
+.cc-dot.cc-brick{background:var(--brick);border-left:none;}
+.cc-dot.cc-slate{background:var(--slate);border-left:none;}
+.cc-dot.cc-teal{background:var(--teal);border-left:none;}
+.cc-dot.cc-navy{background:var(--navy);border-left:none;}
+.cc-dot.cc-plum{background:var(--plum);border-left:none;}
+.cc-dot.cc-rust{background:var(--rust);border-left:none;}
+.cc-dot.cc-olive{background:var(--olive);border-left:none;}
+.cc-dot.cc-clay{background:var(--clay);border-left:none;}
+.cc-dot.cc-berry{background:var(--berry);border-left:none;}
+.tt-cc-forest{border-left:4px solid var(--forest);}
+.tt-cc-gold{border-left:4px solid var(--gold);}
+.tt-cc-brick{border-left:4px solid var(--brick);}
+.tt-cc-slate{border-left:4px solid var(--slate);}
+.tt-cc-teal{border-left:4px solid var(--teal);}
+.tt-cc-navy{border-left:4px solid var(--navy);}
+.tt-cc-plum{border-left:4px solid var(--plum);}
+.tt-cc-rust{border-left:4px solid var(--rust);}
+.tt-cc-olive{border-left:4px solid var(--olive);}
+.tt-cc-clay{border-left:4px solid var(--clay);}
+.tt-cc-berry{border-left:4px solid var(--berry);}
 
 .empty-note{
   color:var(--ink-faint);
@@ -442,9 +524,13 @@ label.field-label{
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="app">
+  <button class="nav-reveal" id="nav-reveal" aria-label="Show menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+  </button>
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-brand">Andy Brooks</div>
     <div class="sidebar-sub">Weekly Planner</div>
@@ -482,14 +568,14 @@ const DEFAULT_CLASSES = {
   '11SEA/Tu': {label:'11SEA — Tutor Group', color:'slate'},
   '13D/Fm':   {label:'13D — Further Maths', color:'forest'},
   '11C/Lt':   {label:'11C — Lt',            color:'gold'},
-  '12E/Fm':   {label:'12E — Further Maths', color:'forest'},
-  '10s/Ma1':  {label:'10 (s) Set 1 — Maths',color:'slate'},
-  '11h/Ma4':  {label:'11 (h) Set 4 — Maths',color:'slate'},
-  '10h/Ma1':  {label:'10 (h) Set 1 — Maths',color:'slate'},
-  '10C/Lt':   {label:'10C — Lt',            color:'gold'},
-  '13C/Ma':   {label:'13C — Maths',         color:'forest'},
-  '13A/Ma':   {label:'13A — Maths',         color:'forest'},
-  '9S2/Ma':   {label:'9S2 — Maths',         color:'slate'}
+  '12E/Fm':   {label:'12E — Further Maths', color:'teal'},
+  '10s/Ma1':  {label:'10 (s) Set 1 — Maths',color:'navy'},
+  '11h/Ma4':  {label:'11 (h) Set 4 — Maths',color:'plum'},
+  '10h/Ma1':  {label:'10 (h) Set 1 — Maths',color:'rust'},
+  '10C/Lt':   {label:'10C — Lt',            color:'olive'},
+  '13C/Ma':   {label:'13C — Maths',         color:'clay'},
+  '13A/Ma':   {label:'13A — Maths',         color:'berry'},
+  '9S2/Ma':   {label:'9S2 — Maths',         color:'brick'}
 };
 
 // timetable[weekType][day][periodKey] = {class, room, time (optional override), double (bool)} or null (free)
@@ -610,7 +696,8 @@ function defaultStore(){
     dailyOverrides: {},    // "YYYY-MM-DD_periodKey" -> {class, room} (one-off, e.g. cover or a single room change)
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
     weekAnchor: WEEK_ANCHOR,
-    weekAnchorType: WEEK_ANCHOR_TYPE
+    weekAnchorType: WEEK_ANCHOR_TYPE,
+    lastModified: 0
   };
 }
 
@@ -629,6 +716,7 @@ function loadStore(){
 }
 function persist(){
   try{
+    store.lastModified = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   }catch(e){
     showToast('Could not save — your browser storage may be full.');
@@ -867,7 +955,8 @@ function renderDashboard(){
         <div class="period-time"><strong>${p.label}</strong>${p.time}</div>
         <div class="period-main">
           <div class="period-class-line">
-            <span class="period-class-name">${info? info.label : 'Free period'}</span>
+            ${info? `<span class="cc-dot cc-${info.color}"></span>`:''}
+            <span class="period-class-name">${info? escapeHtml(info.label) : 'Free period'}</span>
             ${slot? `<span class="period-room pill pill-muted">${slot.room}</span>`:''}
           </div>
           ${slot ? `<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${p.key}">
@@ -980,7 +1069,7 @@ function renderWeekly(){
       }
       const info = classInfo(slot.class);
       const lesson = getLesson(iso, p.key);
-      return `<div class="tt-cell tt-lesson-cell ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
+      return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
         <span class="cname">${escapeHtml(info.label)}${overridden?' <span class="pill pill-gold" title="Changed for this date">•</span>':''}</span>
         <span class="croom">${slot.room}${slot.time?' · '+slot.time:''}</span>
         ${lesson.title? `<span class="cnote">${escapeHtml(lesson.title)}</span>`:''}
@@ -1050,7 +1139,7 @@ function renderDaily(){
             <input type="text" class="input slot-class" style="width:150px;" placeholder="Free period — class code" value="${escapeHtml(slot? slot.class:'')}">
             <input type="text" class="input slot-room" style="width:80px;" placeholder="Room" value="${escapeHtml(slot? slot.room:'')}">
             ${slot?.time? `<span class="pill pill-muted">${slot.time}</span>`:''}
-            ${info? `<span class="pill pill-forest">${escapeHtml(info.label)}</span>`:''}
+            ${info? `<span class="pill pill-${info.color}">${escapeHtml(info.label)}</span>`:''}
             ${overridden? `<a href="#" class="slot-reset" data-date="${iso}" data-period="${p.key}" style="font-size:11.5px;color:var(--ink-soft);">reset</a>` : ''}
           </div>
           <div class="daily-fields">
@@ -1149,7 +1238,7 @@ function renderPlans(){
       <h1 class="page-title">Curriculum overview by class</h1>
     </div>
     <div class="class-tabs">
-      ${codes.map(c=>`<button class="class-tab ${c===active?'active':''}" data-class="${c}">${escapeHtml(classInfo(c).label)}</button>`).join('')}
+      ${codes.map(c=>`<button class="class-tab ${c===active?'active':''}" data-class="${c}"><span class="cc-dot cc-${classInfo(c).color}"></span> ${escapeHtml(classInfo(c).label)}</button>`).join('')}
     </div>
     <div class="card" style="padding:22px 24px;margin-bottom:20px;">
       <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;">
@@ -1180,14 +1269,27 @@ function renderSettings(){
     </div>
 
     <div class="card settings-block">
+      <h3>Google Drive sync</h3>
+      ${driveSignedIn ? `
+        <p>Connected as <strong>${escapeHtml(driveEmail||'your Google account')}</strong>. Your data saves to a single file in your Drive, so it's available on any device you sign in on here.</p>
+        <div class="row-flex">
+          <button class="btn btn-primary" id="drive-sync-btn" ${driveBusy?'disabled':''}>${driveBusy? 'Syncing…' : 'Sync now'}</button>
+          <button class="btn btn-ghost" id="drive-signout-btn">Disconnect</button>
+        </div>
+      ` : `
+        <p>Sign in to save your planner to your own Google Drive automatically, and pick it up on any other device by signing in there too.</p>
+        <button class="btn btn-primary" id="drive-signin-btn" ${driveBusy?'disabled':''}>${driveBusy? 'Connecting…' : 'Sign in with Google'}</button>
+      `}
+    </div>
+
+    <div class="card settings-block">
       <h3>How saving works</h3>
-      <p>Everything you type is saved automatically to this browser's storage, on this device only. It will still be here next time you open this file in the <strong>same browser</strong> — but it does <strong>not</strong> sync to another phone, laptop, or browser by itself.</p>
-      <p>To move your planner to another device, or keep a backup, export a copy below and import it wherever you need it.</p>
+      <p>Everything you type is also saved straight away to this browser's storage on this device, so nothing is lost even offline. With Google Drive connected above, it syncs there too — otherwise it stays on this device only.</p>
     </div>
 
     <div class="card settings-block">
       <h3>Export your data</h3>
-      <p>Downloads a single file with every lesson note, long-term plan and timetable edit.</p>
+      <p>Downloads a single file with every lesson note, long-term plan and timetable edit — handy as a one-off backup or to move devices manually.</p>
       <button class="btn btn-primary" id="export-btn">Download backup (.json)</button>
     </div>
 
@@ -1199,7 +1301,7 @@ function renderSettings(){
 
     <div class="card settings-block">
       <h3>Reset</h3>
-      <p>Clears all lesson notes, plans and timetable edits from this browser and starts fresh.</p>
+      <p>Clears all lesson notes, plans and timetable edits from this browser and starts fresh. This does not delete your file in Google Drive.</p>
       <button class="btn btn-danger" id="reset-btn">Reset all data</button>
     </div>
   `;
@@ -1451,6 +1553,12 @@ function attachRouteHandlers(){
         navigate('dashboard');
       }
     };
+    const signinBtn = document.getElementById('drive-signin-btn');
+    if(signinBtn) signinBtn.onclick = driveSignIn;
+    const syncBtn = document.getElementById('drive-sync-btn');
+    if(syncBtn) syncBtn.onclick = ()=>driveSyncNow(false);
+    const signoutBtn = document.getElementById('drive-signout-btn');
+    if(signoutBtn) signoutBtn.onclick = driveSignOut;
   }
 }
 
@@ -1507,9 +1615,189 @@ function importData(e){
 }
 
 /* ======================================================================
+   AUTO-HIDING NAV — hides the sidebar / top bar on scroll-down, reveals
+   it again on scroll-up (or via the small reveal button), so the content
+   area gets more room while reading a long page.
+   ====================================================================== */
+(function initAutoHideNav(){
+  let lastY = window.scrollY;
+  const THRESHOLD = 10;   // ignore tiny scroll jitter
+  const TOP_ZONE = 60;    // always show near the very top of the page
+  window.addEventListener('scroll', ()=>{
+    const y = window.scrollY;
+    if(y < TOP_ZONE){
+      document.body.classList.remove('nav-hidden');
+    }else if(y - lastY > THRESHOLD){
+      document.body.classList.add('nav-hidden');
+    }else if(lastY - y > THRESHOLD){
+      document.body.classList.remove('nav-hidden');
+    }
+    lastY = y;
+  }, {passive:true});
+  document.getElementById('nav-reveal').addEventListener('click', ()=>{
+    document.body.classList.remove('nav-hidden');
+  });
+})();
+
+/* ======================================================================
+   GOOGLE DRIVE SYNC
+   Saves the planner's data as one JSON file in the signed-in user's own
+   Google Drive (created and owned by them — this app can only see the
+   one file it creates, nothing else in their Drive).
+   ====================================================================== */
+const GOOGLE_CLIENT_ID = '906248134114-q0kkee9cntkjttl9laickus81s4reaf4.apps.googleusercontent.com';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILENAME = 'andy-brooks-planner-data.json';
+
+let gTokenClient = null;
+let gAccessToken = null;
+let driveFileId = localStorage.getItem('plannerDriveFileId') || null;
+let driveSignedIn = false;
+let driveEmail = localStorage.getItem('plannerDriveEmail') || '';
+let driveBusy = false;
+
+function waitForGoogleIdentity(cb, tries){
+  tries = tries||0;
+  if(window.google && google.accounts && google.accounts.oauth2){ cb(); return; }
+  if(tries>75){ console.warn('Google Identity Services did not load.'); return; }
+  setTimeout(()=>waitForGoogleIdentity(cb, tries+1), 200);
+}
+
+function driveInit(){
+  waitForGoogleIdentity(()=>{
+    gTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: (resp)=>{
+        driveBusy = false;
+        if(resp.error){
+          driveSignedIn = false;
+          if(state.route==='settings') render();
+          return;
+        }
+        gAccessToken = resp.access_token;
+        driveSignedIn = true;
+        localStorage.setItem('plannerDriveConnected','1');
+        fetchDriveProfile().then(()=>driveSyncNow(true));
+      }
+    });
+    if(localStorage.getItem('plannerDriveConnected')==='1'){
+      driveBusy = true;
+      gTokenClient.requestAccessToken({prompt:''});
+    }
+  });
+}
+function driveSignIn(){
+  if(!gTokenClient){ showToast('Still loading Google sign-in — try again in a moment.'); return; }
+  driveBusy = true;
+  gTokenClient.requestAccessToken({prompt:'consent'});
+  if(state.route==='settings') render();
+}
+function driveSignOut(){
+  if(gAccessToken) google.accounts.oauth2.revoke(gAccessToken, ()=>{});
+  driveSignedIn = false; gAccessToken = null; driveEmail='';
+  localStorage.removeItem('plannerDriveConnected');
+  localStorage.removeItem('plannerDriveEmail');
+  showToast('Disconnected from Google Drive');
+  if(state.route==='settings') render();
+}
+async function fetchDriveProfile(){
+  try{
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {headers:{'Authorization':'Bearer '+gAccessToken}});
+    const data = await res.json();
+    driveEmail = data.email || '';
+    localStorage.setItem('plannerDriveEmail', driveEmail);
+  }catch(e){ /* non-essential */ }
+}
+function driveHeaders(extra){
+  return Object.assign({'Authorization':'Bearer '+gAccessToken}, extra||{});
+}
+async function driveFindFile(){
+  const q = encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`, {headers:driveHeaders()});
+  const data = await res.json();
+  if(data.files && data.files.length){
+    driveFileId = data.files[0].id;
+    localStorage.setItem('plannerDriveFileId', driveFileId);
+    return driveFileId;
+  }
+  return null;
+}
+async function driveCreateFile(content){
+  const boundary = 'plannerBoundary';
+  const metadata = {name: DRIVE_FILENAME, mimeType:'application/json'};
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`+
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n`+
+    `--${boundary}--`;
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    method:'POST',
+    headers: driveHeaders({'Content-Type':`multipart/related; boundary=${boundary}`}),
+    body
+  });
+  const data = await res.json();
+  driveFileId = data.id;
+  localStorage.setItem('plannerDriveFileId', driveFileId);
+}
+async function driveUpload(content){
+  if(!driveFileId){
+    const found = await driveFindFile();
+    if(!found){ await driveCreateFile(content); return; }
+  }
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+    method:'PATCH',
+    headers: driveHeaders({'Content-Type':'application/json'}),
+    body: content
+  });
+  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); await driveCreateFile(content); }
+}
+async function driveDownload(){
+  if(!driveFileId){
+    const found = await driveFindFile();
+    if(!found) return null;
+  }
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {headers:driveHeaders()});
+  if(!res.ok) return null;
+  return await res.text();
+}
+async function driveSyncNow(silent){
+  if(!gAccessToken){ if(!silent) showToast('Not signed in to Google.'); return; }
+  driveBusy = true;
+  if(state.route==='settings') render();
+  try{
+    const remoteText = await driveDownload();
+    if(remoteText){
+      const remote = JSON.parse(remoteText);
+      const remoteTime = remote.lastModified||0;
+      const localTime = store.lastModified||0;
+      if(remoteTime > localTime){
+        store = Object.assign(defaultStore(), remote);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+        showToast('Loaded the latest version from Google Drive');
+        render();
+      }else if(localTime > remoteTime){
+        await driveUpload(JSON.stringify(store));
+        showToast('Backed up to Google Drive');
+      }else if(!silent){
+        showToast('Already up to date');
+      }
+    }else{
+      await driveUpload(JSON.stringify(store));
+      showToast('Backed up to Google Drive');
+    }
+  }catch(err){
+    console.error(err);
+    if(!silent) showToast('Drive sync failed — check your connection and try again.');
+  }
+  driveBusy = false;
+  if(state.route==='settings') render();
+}
+
+/* ======================================================================
    INIT
    ====================================================================== */
 render();
+driveInit();
 </script>
 </body>
 </html>
