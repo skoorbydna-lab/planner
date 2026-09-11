@@ -801,6 +801,55 @@ function clearDailyOverride(dateISO, periodKey){
   delete store.dailyOverrides[dateISO+'_'+periodKey];
   persist();
 }
+// Double periods (e.g. Period 1 & 2 taught as one lesson) are stored as two
+// timetable slots that share a class/room and are both flagged `double`.
+// These helpers detect that pairing so the UI can show/edit them as one row.
+const DOUBLE_PAIRS = [['p1','p2'],['p3','p4'],['p5','p6']];
+function pairPartnerKey(periodKey){
+  const pair = DOUBLE_PAIRS.find(([a])=>a===periodKey);
+  return pair ? pair[1] : null;
+}
+function computeDayRows(dateISO){
+  const rows = [];
+  let skip = false;
+  for(let i=0;i<PERIODS.length;i++){
+    const p = PERIODS[i];
+    if(skip){ skip=false; continue; }
+    if(p.kind==='fixed'){ rows.push({type:'fixed', period:p}); continue; }
+    if(p.key==='after'){ rows.push({type:'after', period:p}); continue; }
+    const slot = getSlotForDate(dateISO, p.key);
+    const partnerKey = pairPartnerKey(p.key);
+    if(partnerKey && slot && slot.double){
+      const partnerSlot = getSlotForDate(dateISO, partnerKey);
+      if(partnerSlot && partnerSlot.double && partnerSlot.class===slot.class && partnerSlot.room===slot.room){
+        const partnerPeriod = PERIODS.find(pp=>pp.key===partnerKey);
+        const label = `${p.label} & ${partnerPeriod.label.split(' ').pop()}`;
+        const time = slot.time || (p.time.split('–')[0]+'–'+partnerPeriod.time.split('–')[1]);
+        rows.push({type:'double', periodA:p, periodB:partnerPeriod, slot, label, time});
+        skip = true;
+        continue;
+      }
+    }
+    rows.push({type:'single', period:p, slot});
+  }
+  return rows;
+}
+function setDailyOverridePair(dateISO, periodAKey, periodBKey, cls, room, combinedTime){
+  const keyA = dateISO+'_'+periodAKey, keyB = dateISO+'_'+periodBKey;
+  if(!cls && !room){
+    store.dailyOverrides[keyA] = null;
+    store.dailyOverrides[keyB] = null;
+  }else{
+    store.dailyOverrides[keyA] = {class:cls, room:room, double:true, time:combinedTime};
+    store.dailyOverrides[keyB] = {class:cls, room:room, double:true};
+  }
+  persist();
+}
+function clearDailyOverridePair(dateISO, periodAKey, periodBKey){
+  delete store.dailyOverrides[dateISO+'_'+periodAKey];
+  delete store.dailyOverrides[dateISO+'_'+periodBKey];
+  persist();
+}
 function lessonKey(dateISO, periodKey){ return dateISO+'_'+periodKey; }
 function getLesson(dateISO, periodKey){
   return store.lessons[lessonKey(dateISO,periodKey)] || {title:'',notes:'',homework:''};
@@ -946,11 +995,13 @@ function renderDashboard(){
 
   let periodsHtml = '';
   if(isSchoolDay){
-    periodsHtml = PERIODS.map(p=>{
-      if(p.kind==='fixed'){
+    periodsHtml = computeDayRows(todayISO).map(row=>{
+      if(row.type==='fixed'){
+        const p = row.period;
         return `<div class="period-fixed"><div class="period-time">${p.time}</div><div>${p.label}</div></div>`;
       }
-      if(p.key==='after'){
+      if(row.type==='after'){
+        const p = row.period;
         const text = store.afterSchool[todayISO] || '';
         return `<div class="period-row">
           <div class="period-time"><strong>${p.label}</strong>${p.time}</div>
@@ -961,18 +1012,21 @@ function renderDashboard(){
           </div>
         </div>`;
       }
-      const slot = getSlotForDate(todayISO, p.key);
+      const label = row.type==='double' ? row.label : row.period.label;
+      const time = row.type==='double' ? row.time : row.period.time;
+      const periodKey = row.type==='double' ? row.periodA.key : row.period.key;
+      const slot = row.slot;
       const info = slot ? classInfo(slot.class) : null;
-      const lesson = getLesson(todayISO, p.key);
+      const lesson = getLesson(todayISO, periodKey);
       return `<div class="period-row">
-        <div class="period-time"><strong>${p.label}</strong>${p.time}</div>
+        <div class="period-time"><strong>${label}</strong>${time}</div>
         <div class="period-main">
           <div class="period-class-line">
             ${info? `<span class="cc-dot cc-${info.color}"></span>`:''}
             <span class="period-class-name">${info? escapeHtml(info.label) : 'Free period'}</span>
             ${slot? `<span class="period-room pill pill-muted">${slot.room}</span>`:''}
           </div>
-          ${slot ? `<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${p.key}">
+          ${slot ? `<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${periodKey}">
             ${lesson.title ? escapeHtml(lesson.title) : 'Tap to add lesson content'}
           </div>` : `<div class="empty-note">Free — plan time or admin</div>`}
         </div>
@@ -1087,7 +1141,14 @@ function renderWeekly(){
         return `<div class="tt-cell tt-lesson-cell empty ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">Free${overridden?' <span class=\"pill pill-gold\" style=\"margin-left:4px;\">•</span>':''}</div>`;
       }
       const info = classInfo(slot.class);
-      const lesson = getLesson(iso, p.key);
+      // If this is the second half of a merged double, read the lesson under the lead period's key
+      const asSecondOf = DOUBLE_PAIRS.find(([a,b])=>b===p.key);
+      let lessonKeyToUse = p.key;
+      if(asSecondOf){
+        const leadSlot = getSlotForDate(iso, asSecondOf[0]);
+        if(leadSlot && leadSlot.double && slot.double && leadSlot.class===slot.class && leadSlot.room===slot.room) lessonKeyToUse = asSecondOf[0];
+      }
+      const lesson = getLesson(iso, lessonKeyToUse);
       return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
         <span class="cname">${escapeHtml(info.label)}${overridden?' <span class="pill pill-gold" title="Changed for this date">•</span>':''}</span>
         <span class="croom">${slot.room}${slot.time?' · '+slot.time:''}</span>
@@ -1132,11 +1193,13 @@ function renderDaily(){
   if(!dKey){
     body = `<div class="card" style="padding:24px;"><p class="empty-note">No timetabled lessons on weekends.</p></div>`;
   }else{
-    body = `<div class="card" style="padding:6px 22px;">` + PERIODS.map(p=>{
-      if(p.kind==='fixed'){
+    body = `<div class="card" style="padding:6px 22px;">` + computeDayRows(iso).map(row=>{
+      if(row.type==='fixed'){
+        const p = row.period;
         return `<div class="daily-fixed">${p.label} · ${p.time}</div>`;
       }
-      if(p.key==='after'){
+      if(row.type==='after'){
+        const p = row.period;
         const text = store.afterSchool[iso]||'';
         const chip = dayAgendaChip(iso);
         return `<div class="daily-period">
@@ -1147,29 +1210,33 @@ function renderDaily(){
           </div>
         </div>`;
       }
-      const slot = getSlotForDate(iso, p.key);
+      const isDouble = row.type==='double';
+      const label = isDouble ? row.label : row.period.label;
+      const time = isDouble ? row.time : row.period.time;
+      const periodKey = isDouble ? row.periodA.key : row.period.key;
+      const partnerKey = isDouble ? row.periodB.key : '';
+      const slot = row.slot;
       const info = slot ? classInfo(slot.class) : null;
-      const lesson = getLesson(iso, p.key);
-      const overridden = hasDailyOverride(iso, p.key);
+      const lesson = getLesson(iso, periodKey);
+      const overridden = isDouble ? (hasDailyOverride(iso, periodKey) || hasDailyOverride(iso, partnerKey)) : hasDailyOverride(iso, periodKey);
       return `<div class="daily-period">
-        <div class="daily-time-col"><div class="lbl">${p.label}</div><div class="tm">${p.time}</div></div>
+        <div class="daily-time-col"><div class="lbl">${label}</div><div class="tm">${time}</div></div>
         <div class="daily-body">
-          <div class="daily-class-head slot-edit-row" data-date="${iso}" data-period="${p.key}">
+          <div class="daily-class-head slot-edit-row" data-date="${iso}" data-period="${periodKey}" data-partner="${partnerKey}" data-combined-time="${time}">
             <input type="text" class="input slot-class" style="width:150px;" placeholder="Free period — class code" value="${escapeHtml(slot? slot.class:'')}">
             <input type="text" class="input slot-room" style="width:80px;" placeholder="Room" value="${escapeHtml(slot? slot.room:'')}">
-            ${slot?.time? `<span class="pill pill-muted">${slot.time}</span>`:''}
             ${info? `<span class="pill pill-${info.color}">${escapeHtml(info.label)}</span>`:''}
-            ${overridden? `<a href="#" class="slot-reset" data-date="${iso}" data-period="${p.key}" style="font-size:11.5px;color:var(--ink-soft);">reset</a>` : ''}
+            ${overridden? `<a href="#" class="slot-reset" data-date="${iso}" data-period="${periodKey}" data-partner="${partnerKey}" style="font-size:11.5px;color:var(--ink-soft);">reset</a>` : ''}
           </div>
           <div class="daily-fields">
             <div class="full"><label class="field-label">Lesson focus / title</label>
-              <input class="input lesson-field" data-field="title" data-date="${iso}" data-period="${p.key}" value="${escapeHtml(lesson.title)}" placeholder="e.g. Integration by substitution">
+              <input class="input lesson-field" data-field="title" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.title)}" placeholder="e.g. Integration by substitution">
             </div>
             <div class="full"><label class="field-label">Notes / activities</label>
-              <textarea class="lesson-field" data-field="notes" data-date="${iso}" data-period="${p.key}" rows="3" placeholder="Key activities, resources, differentiation…">${escapeHtml(lesson.notes)}</textarea>
+              <textarea class="lesson-field" data-field="notes" data-date="${iso}" data-period="${periodKey}" rows="3" placeholder="Key activities, resources, differentiation…">${escapeHtml(lesson.notes)}</textarea>
             </div>
             <div class="full"><label class="field-label">Homework / follow-up</label>
-              <input class="input lesson-field" data-field="homework" data-date="${iso}" data-period="${p.key}" value="${escapeHtml(lesson.homework)}" placeholder="Set, due date…">
+              <input class="input lesson-field" data-field="homework" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.homework)}" placeholder="Set, due date…">
             </div>
           </div>
         </div>
@@ -1330,12 +1397,27 @@ function renderSettings(){
    LESSON MODAL
    ====================================================================== */
 function openLessonModal(dateISO, periodKey){
+  // If the clicked period is the second half of a merged double, resolve to
+  // the lead period so both halves always open/edit the same lesson.
+  const asSecondOf = DOUBLE_PAIRS.find(([a,b])=>b===periodKey);
+  if(asSecondOf){
+    const leadSlot = getSlotForDate(dateISO, asSecondOf[0]);
+    const thisSlot = getSlotForDate(dateISO, periodKey);
+    if(leadSlot && thisSlot && leadSlot.double && thisSlot.double && leadSlot.class===thisSlot.class && leadSlot.room===thisSlot.room){
+      periodKey = asSecondOf[0];
+    }
+  }
   const date = fromISO(dateISO);
-  const period = PERIODS.find(p=>p.key===periodKey);
+  const rows = computeDayRows(dateISO);
+  const row = rows.find(r => (r.type==='double' && r.periodA.key===periodKey) || (r.type==='single' && r.period.key===periodKey));
+  const isDouble = row && row.type==='double';
+  const partnerKey = isDouble ? row.periodB.key : null;
+  const label = row ? (isDouble ? row.label : row.period.label) : (PERIODS.find(p=>p.key===periodKey)||{}).label;
+  const time = row ? (isDouble ? row.time : row.period.time) : '';
   const slot = getSlotForDate(dateISO, periodKey);
   const info = slot ? classInfo(slot.class) : null;
   const lesson = getLesson(dateISO, periodKey);
-  const overridden = hasDailyOverride(dateISO, periodKey);
+  const overridden = isDouble ? (hasDailyOverride(dateISO, periodKey) || hasDailyOverride(dateISO, partnerKey)) : hasDailyOverride(dateISO, periodKey);
 
   const root = document.getElementById('modal-root');
   root.innerHTML = `
@@ -1344,7 +1426,7 @@ function openLessonModal(dateISO, periodKey){
         <div class="modal-head">
           <div>
             <h3>${info? escapeHtml(info.label) : 'Free period'}</h3>
-            <div class="sub">${fmtLong(date)} · ${period.label} (${period.time})</div>
+            <div class="sub">${fmtLong(date)} · ${label} (${time})</div>
           </div>
           <button class="icon-btn" id="modal-close">${ICONS.close}</button>
         </div>
@@ -1382,7 +1464,12 @@ function openLessonModal(dateISO, periodKey){
   document.getElementById('modal-close').onclick = close;
   document.getElementById('modal-overlay').addEventListener('click', e=>{ if(e.target.id==='modal-overlay') close(); });
   const resetLink = document.getElementById('m-reset-slot');
-  if(resetLink) resetLink.onclick = (e)=>{ e.preventDefault(); clearDailyOverride(dateISO, periodKey); openLessonModal(dateISO, periodKey); };
+  if(resetLink) resetLink.onclick = (e)=>{
+    e.preventDefault();
+    if(isDouble) clearDailyOverridePair(dateISO, periodKey, partnerKey);
+    else clearDailyOverride(dateISO, periodKey);
+    openLessonModal(dateISO, periodKey);
+  };
   document.getElementById('modal-save').onclick = ()=>{
     const newClass = document.getElementById('m-class').value.trim();
     const newRoom = document.getElementById('m-room').value.trim();
@@ -1390,9 +1477,11 @@ function openLessonModal(dateISO, periodKey){
     const baselineClass = baseline? baseline.class : '';
     const baselineRoom = baseline? baseline.room : '';
     if(newClass!==baselineClass || newRoom!==baselineRoom){
-      setDailyOverride(dateISO, periodKey, newClass, newRoom);
+      if(isDouble) setDailyOverridePair(dateISO, periodKey, partnerKey, newClass, newRoom, time);
+      else setDailyOverride(dateISO, periodKey, newClass, newRoom);
     }else if(overridden){
-      clearDailyOverride(dateISO, periodKey);
+      if(isDouble) clearDailyOverridePair(dateISO, periodKey, partnerKey);
+      else clearDailyOverride(dateISO, periodKey);
     }
     setLesson(dateISO, periodKey, {
       title: document.getElementById('m-title').value,
@@ -1490,17 +1579,24 @@ function attachRouteHandlers(){
     document.getElementById('day-pick').onchange = (e)=>{ state.dailyDate = fromISO(e.target.value); render(); };
 
     document.querySelectorAll('.slot-edit-row').forEach(row=>{
-      const dateISO = row.dataset.date, periodKey = row.dataset.period;
+      const dateISO = row.dataset.date, periodKey = row.dataset.period, partnerKey = row.dataset.partner;
+      const combinedTime = row.dataset.combinedTime;
       const classInput = row.querySelector('.slot-class');
       const roomInput = row.querySelector('.slot-room');
       const saveSlot = debounce(()=>{
-        setDailyOverride(dateISO, periodKey, classInput.value.trim(), roomInput.value.trim());
+        if(partnerKey) setDailyOverridePair(dateISO, periodKey, partnerKey, classInput.value.trim(), roomInput.value.trim(), combinedTime);
+        else setDailyOverride(dateISO, periodKey, classInput.value.trim(), roomInput.value.trim());
         if(!row.querySelector('.slot-reset')){
           const a = document.createElement('a');
           a.href = '#'; a.className = 'slot-reset'; a.textContent = 'reset';
-          a.dataset.date = dateISO; a.dataset.period = periodKey;
+          a.dataset.date = dateISO; a.dataset.period = periodKey; a.dataset.partner = partnerKey;
           a.style.cssText = 'font-size:11.5px;color:var(--ink-soft);';
-          a.addEventListener('click', (e)=>{ e.preventDefault(); clearDailyOverride(dateISO, periodKey); render(); });
+          a.addEventListener('click', (e)=>{
+            e.preventDefault();
+            if(partnerKey) clearDailyOverridePair(dateISO, periodKey, partnerKey);
+            else clearDailyOverride(dateISO, periodKey);
+            render();
+          });
           row.appendChild(a);
         }
       }, 500);
@@ -1510,7 +1606,8 @@ function attachRouteHandlers(){
     document.querySelectorAll('.slot-reset').forEach(el=>{
       el.addEventListener('click', (e)=>{
         e.preventDefault();
-        clearDailyOverride(el.dataset.date, el.dataset.period);
+        if(el.dataset.partner) clearDailyOverridePair(el.dataset.date, el.dataset.period, el.dataset.partner);
+        else clearDailyOverride(el.dataset.date, el.dataset.period);
         render();
       });
     });
