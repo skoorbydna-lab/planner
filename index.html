@@ -508,6 +508,9 @@ label.field-label{
 .week-card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
 .week-card-head .wb{font-weight:600;font-size:14.5px;}
 .week-card ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;}
+.custom-event-tag{background:var(--gold-wash);color:var(--gold);border-radius:5px;padding:1px 6px;font-weight:600;}
+.custom-event-tag a{color:var(--brick);text-decoration:none;font-weight:700;margin-left:2px;}
+.custom-event-tag a:hover{text-decoration:underline;}
 .week-card.holiday ul, .week-card.holiday .wb{color:var(--brick);}
 
 /* ============================= LONG TERM PLANS ============================= */
@@ -704,6 +707,7 @@ function defaultStore(){
     classMeta: {},         // classCode -> {label, color}  (overrides DEFAULT_CLASSES)
     timetableOverrides: {},// weekType -> day -> periodKey -> {class, room} (overrides DEFAULT_TIMETABLE — permanent, e.g. a room correction)
     dailyOverrides: {},    // "YYYY-MM-DD_periodKey" -> {class, room} (one-off, e.g. cover or a single room change)
+    customEvents: {},      // "YYYY-MM-DD" -> array of manually-added calendar/meeting notes for that date
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
     weekAnchor: WEEK_ANCHOR,
     weekAnchorType: WEEK_ANCHOR_TYPE,
@@ -878,16 +882,18 @@ function weekOf(dateISO){
   });
 }
 // Meetings/CPD for one specific date, read straight off that date's real
-// column in the source calendar table.
+// column in the source calendar table, plus anything the user has added
+// manually for that date.
 function dayEvents(dateISO){
   const date = fromISO(dateISO);
   const dKey = dayKeyOf(date);
   const wk = weekOf(dateISO);
-  if(!wk || !dKey) return {items:[], isHoliday:false};
-  if(wk.holiday) return {items:[], isHoliday:true, holidayLabel:wk.note};
-  const items = wk.days[dKey] || [];
-  const isHolidayDay = items.length===1 && items[0]==='Holiday';
-  return {items: isHolidayDay? [] : items, isHoliday:isHolidayDay, holidayLabel:'Holiday'};
+  const custom = store.customEvents[dateISO] || [];
+  if(!wk || !dKey) return {items: custom.slice(), isHoliday:false};
+  if(wk.holiday) return {items: custom.slice(), isHoliday: custom.length===0, holidayLabel:wk.note};
+  const builtIn = wk.days[dKey] || [];
+  const isHolidayDay = builtIn.length===1 && builtIn[0]==='Holiday';
+  return {items: (isHolidayDay? [] : builtIn).concat(custom), isHoliday: isHolidayDay && custom.length===0, holidayLabel:'Holiday'};
 }
 // Renders that date's actual meetings/CPD as a small read-only chip —
 // used in the After School slot in Weekly and Daily views.
@@ -901,6 +907,20 @@ function dayAgendaChip(dateISO){
     <span class="agenda-title">Today's meeting / CPD</span>
     <ul>${ev.items.map(e=>`<li>${escapeHtml(e)}</li>`).join('')}</ul>
   </div>`;
+}
+function addCustomEvent(dateISO, text){
+  text = text.trim();
+  if(!text) return;
+  if(!store.customEvents[dateISO]) store.customEvents[dateISO] = [];
+  store.customEvents[dateISO].push(text);
+  persist();
+}
+function removeCustomEvent(dateISO, idx){
+  const list = store.customEvents[dateISO];
+  if(!list) return;
+  list.splice(idx,1);
+  if(!list.length) delete store.customEvents[dateISO];
+  persist();
 }
 
 let toastTimer;
@@ -1026,9 +1046,9 @@ function renderDashboard(){
             <span class="period-class-name">${info? escapeHtml(info.label) : 'Free period'}</span>
             ${slot? `<span class="period-room pill pill-muted">${slot.room}</span>`:''}
           </div>
-          ${slot ? `<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${periodKey}">
-            ${lesson.title ? escapeHtml(lesson.title) : 'Tap to add lesson content'}
-          </div>` : `<div class="empty-note">Free — plan time or admin</div>`}
+          ${`<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${periodKey}">
+            ${lesson.title ? escapeHtml(lesson.title) : (slot? 'Tap to add lesson content' : 'Free — tap to add a note')}
+          </div>`}
         </div>
       </div>`;
     }).join('');
@@ -1071,12 +1091,23 @@ function renderDashboard(){
 }
 
 function renderWeekEventsList(wk){
+  const start = fromISO(wk.wb);
   if(wk.holiday){
-    return `<div class="pill pill-brick">${escapeHtml(wk.note)}</div>`;
+    const customLines = DAYS.map((d,i)=>{
+      const dateISO = toISO(addDays(start,i));
+      const custom = store.customEvents[dateISO]||[];
+      if(!custom.length) return '';
+      return `<li><strong>${d}:</strong> ${custom.map(escapeHtml).join(' · ')}</li>`;
+    }).join('');
+    return `<div class="pill pill-brick">${escapeHtml(wk.note)}</div>${customLines? `<ul style="margin:8px 0 0;padding-left:16px;font-size:13px;line-height:1.7;">${customLines}</ul>`:''}`;
   }
-  const dayLines = DAYS.map(d=>{
-    const items = wk.days[d]||[];
-    if(!items.length || (items.length===1 && items[0]==='Holiday')) return '';
+  const dayLines = DAYS.map((d,i)=>{
+    const dateISO = toISO(addDays(start,i));
+    const builtIn = wk.days[d]||[];
+    const isHol = builtIn.length===1 && builtIn[0]==='Holiday';
+    const custom = store.customEvents[dateISO]||[];
+    const items = (isHol? [] : builtIn).concat(custom);
+    if(!items.length) return '';
     return `<li><strong>${d}:</strong> ${items.map(escapeHtml).join(' · ')}</li>`;
   }).join('');
   const tagLine = [...wk.sesi.map(s=>`<span class="pill pill-slate">${escapeHtml(s)}</span>`),
@@ -1138,7 +1169,11 @@ function renderWeekly(){
       const slot = getSlotForDate(iso, p.key);
       const overridden = hasDailyOverride(iso, p.key);
       if(!slot){
-        return `<div class="tt-cell tt-lesson-cell empty ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">Free${overridden?' <span class=\"pill pill-gold\" style=\"margin-left:4px;\">•</span>':''}</div>`;
+        const freeLesson = getLesson(iso, p.key);
+        return `<div class="tt-cell tt-lesson-cell ${freeLesson.title?'':'empty'} ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
+          <span class="cname" style="${freeLesson.title?'':'color:var(--ink-faint);font-weight:500;'}">Free${overridden?' <span class="pill pill-gold" style="margin-left:4px;">•</span>':''}</span>
+          ${freeLesson.title? `<span class="cnote">${escapeHtml(freeLesson.title)}</span>`:''}
+        </div>`;
       }
       const info = classInfo(slot.class);
       // If this is the second half of a merged double, read the lesson under the lead period's key
@@ -1264,22 +1299,30 @@ function renderDaily(){
    ====================================================================== */
 function renderCalendar(){
   const todayISO = toISO(new Date());
+  function buildDayLine(dateISO, dayLabel, builtInItems){
+    const isHol = builtInItems.length===1 && builtInItems[0]==='Holiday';
+    const custom = store.customEvents[dateISO]||[];
+    const parts = [];
+    if(isHol) parts.push('<span class="pill pill-brick">Holiday</span>');
+    else if(builtInItems.length) parts.push(builtInItems.map(escapeHtml).join(' · '));
+    custom.forEach((c,idx)=>{
+      parts.push(`<span class="custom-event-tag">${escapeHtml(c)} <a href="#" class="cal-del-event" data-date="${dateISO}" data-idx="${idx}" title="Remove this">×</a></span>`);
+    });
+    if(!parts.length) return '';
+    return `<li><strong>${dayLabel}:</strong> ${parts.join(' · ')}</li>`;
+  }
   const cards = TERM_CALENDAR.map(wk=>{
     const start = fromISO(wk.wb);
     const end = addDays(start,4);
     const isCurrent = fromISO(todayISO) >= start && fromISO(todayISO) <= addDays(start,6);
     if(wk.holiday){
+      const dayRows = DAYS.map((d,i)=>buildDayLine(toISO(addDays(start,i)), `${DAY_FULL[d]} ${fmtShort(addDays(start,i))}`, [])).join('');
       return `<div class="card week-card holiday ${isCurrent?'current':''}">
         <div class="week-card-head"><span class="wb">${fmtShort(start)} – ${fmtShort(addDays(start,6))}</span><span class="pill pill-brick">${escapeHtml(wk.note)}</span></div>
+        ${dayRows? `<ul>${dayRows}</ul>` : ''}
       </div>`;
     }
-    const dayRows = DAYS.map((d,i)=>{
-      const items = wk.days[d]||[];
-      if(!items.length) return '';
-      const isHol = items.length===1 && items[0]==='Holiday';
-      const date = addDays(start,i);
-      return `<li><strong>${DAY_FULL[d]} ${fmtShort(date)}:</strong> ${isHol? '<span class="pill pill-brick">Holiday</span>' : items.map(escapeHtml).join(' · ')}</li>`;
-    }).join('');
+    const dayRows = DAYS.map((d,i)=>buildDayLine(toISO(addDays(start,i)), `${DAY_FULL[d]} ${fmtShort(addDays(start,i))}`, wk.days[d]||[])).join('');
     const tagLine = [...wk.sesi.map(s=>`<span class="pill pill-slate">${escapeHtml(s)}</span>`),
                       ...wk.arr.map(a=>`<span class="pill pill-gold">${escapeHtml(a)}</span>`)].join(' ');
     return `<div class="card week-card ${isCurrent?'current':''}">
@@ -1293,16 +1336,36 @@ function renderCalendar(){
     </div>`;
   }).join('');
 
+  const coveredDates = new Set();
+  TERM_CALENDAR.forEach(wk=>{ const s=fromISO(wk.wb); for(let i=0;i<7;i++) coveredDates.add(toISO(addDays(s,i))); });
+  const orphanDates = Object.keys(store.customEvents).filter(d=>!coveredDates.has(d)).sort();
+  const orphanCard = orphanDates.length ? `<div class="card week-card">
+      <div class="week-card-head"><span class="wb">Outside term dates</span></div>
+      <ul>${orphanDates.map(dateISO=>{
+        const custom = store.customEvents[dateISO]||[];
+        const items = custom.map((c,idx)=>`<span class="custom-event-tag">${escapeHtml(c)} <a href="#" class="cal-del-event" data-date="${dateISO}" data-idx="${idx}" title="Remove this">×</a></span>`).join(' · ');
+        return `<li><strong>${fmtLong(fromISO(dateISO))}:</strong> ${items}</li>`;
+      }).join('')}</ul>
+    </div>` : '';
+
   return `
     <div class="page-head">
       <p class="page-eyebrow">2026–27</p>
       <h1 class="page-title">Termly Calendar</h1>
     </div>
     <p class="empty-note" style="margin-top:-14px;margin-bottom:18px;">Read directly off the actual Mon–Fri columns in your CPD calendar. Grey/gold tags are the calendar's SESI and ARR columns, which the source doesn't pin to a specific day.</p>
+    <div class="card settings-block" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;">Add an event</h3>
+      <div class="row-flex">
+        <input type="date" class="input" id="cal-add-date" style="width:auto;" value="${todayISO}">
+        <input type="text" class="input" id="cal-add-text" style="flex:1;min-width:180px;" placeholder="e.g. Parents' evening prep, dentist 2pm…">
+        <button class="btn btn-primary" id="cal-add-btn">Add</button>
+      </div>
+    </div>
     <div class="term-controls">
       <button class="btn btn-sm" id="cal-today">Jump to current week</button>
     </div>
-    <div id="cal-list">${cards}</div>
+    <div id="cal-list">${cards}${orphanCard}</div>
   `;
 }
 
@@ -1636,6 +1699,22 @@ function attachRouteHandlers(){
       if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
       else showToast('Current week not found in calendar range.');
     };
+    document.getElementById('cal-add-btn').onclick = ()=>{
+      const dateInput = document.getElementById('cal-add-date');
+      const textInput = document.getElementById('cal-add-text');
+      if(!dateInput.value){ showToast('Pick a date first.'); return; }
+      if(!textInput.value.trim()){ showToast('Type something to add.'); return; }
+      addCustomEvent(dateInput.value, textInput.value);
+      showToast('Added to calendar');
+      render();
+    };
+    document.querySelectorAll('.cal-del-event').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.preventDefault();
+        removeCustomEvent(el.dataset.date, parseInt(el.dataset.idx,10));
+        render();
+      });
+    });
   }
 
   if(state.route==='plans'){
