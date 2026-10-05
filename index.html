@@ -388,6 +388,14 @@ label.field-label{
 }
 .mini-event:last-child{border-bottom:none;}
 
+.retirement-card{background:var(--forest);color:#fff;border-color:var(--forest);}
+.retirement-card h3{color:#fff;}
+.retirement-stats{display:flex;gap:10px;}
+.retirement-stat{flex:1;text-align:center;background:rgba(255,255,255,0.08);border-radius:8px;padding:10px 4px;}
+.retirement-stat .num{display:block;font-family:var(--font-display);font-size:26px;line-height:1.1;}
+.retirement-stat .lbl{display:block;font-size:10.5px;color:#D7E0D8;margin-top:3px;text-transform:uppercase;letter-spacing:.03em;}
+.retirement-card .empty-note{color:#C3CFC4;}
+
 /* ============================= TIMETABLE GRID ============================= */
 .week-nav{
   display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;
@@ -639,6 +647,14 @@ const DEFAULT_TIMETABLE = {
 const WEEK_ANCHOR = '2026-09-07';
 const WEEK_ANCHOR_TYPE = 'A';
 
+// Retirement countdown — last day of this school year, per the termly
+// calendar ("Term ends Thu 22 July" in the final week).
+const RETIREMENT_DATE = '2027-07-22';
+// Y11 and Y13 leave early for study leave/exams — their lessons in June
+// and July no longer count towards "lessons remaining" after this date.
+const EARLY_LEAVERS_CUTOFF = '2027-05-31';
+const EARLY_LEAVER_YEAR_PREFIX = /^1[13]/; // class codes starting 11… or 13…
+
 // Termly calendar — read directly off the actual table in "Final Weekly
 // Meetings / CPD 2026-27" (rasterised & visually inspected page by page, not
 // text-extracted, since the PDF's text layer collapsed the day columns).
@@ -838,6 +854,45 @@ function computeDayRows(dateISO){
   }
   return rows;
 }
+// Is this a real teaching day — a weekday, in a non-holiday week, and not
+// itself marked "Holiday" (e.g. the odd day off around INSET at the very
+// start of term)?
+function isTeachingDay(dateISO){
+  const date = fromISO(dateISO);
+  const day = date.getDay();
+  if(day===0 || day===6) return false;
+  const wk = weekOf(dateISO);
+  if(!wk || wk.holiday) return false;
+  const dKey = dayKeyOf(date);
+  const items = wk.days[dKey] || [];
+  if(items.length===1 && items[0]==='Holiday') return false;
+  return true;
+}
+// Weeks / days / lessons remaining between today and RETIREMENT_DATE
+// (inclusive of today). A merged double period counts as one lesson,
+// matching how the rest of the app treats doubles.
+function computeRetirementCountdown(){
+  const todayMonday = getMonday(new Date());
+  const retirementEnd = fromISO(RETIREMENT_DATE);
+  const weeks = TERM_CALENDAR.filter(wk=>!wk.holiday && fromISO(wk.wb) >= todayMonday && fromISO(wk.wb) <= retirementEnd).length;
+  let days = 0, lessons = 0;
+  let cur = new Date(); cur.setHours(0,0,0,0);
+  while(cur <= retirementEnd){
+    const iso = toISO(cur);
+    if(isTeachingDay(iso)){
+      days++;
+      const pastLeaversCutoff = iso > EARLY_LEAVERS_CUTOFF;
+      computeDayRows(iso).forEach(row=>{
+        if((row.type==='single' || row.type==='double') && row.slot){
+          if(pastLeaversCutoff && EARLY_LEAVER_YEAR_PREFIX.test(row.slot.class)) return;
+          lessons++;
+        }
+      });
+    }
+    cur = addDays(cur,1);
+  }
+  return {weeks, days, lessons};
+}
 function setDailyOverridePair(dateISO, periodAKey, periodBKey, cls, room, combinedTime){
   const keyA = dateISO+'_'+periodAKey, keyB = dateISO+'_'+periodBKey;
   if(!cls && !room){
@@ -1005,6 +1060,20 @@ function render(){
 /* ======================================================================
    DASHBOARD
    ====================================================================== */
+function renderRetirementCard(){
+  const todayISO = toISO(new Date());
+  if(todayISO > RETIREMENT_DATE) return '';
+  const c = computeRetirementCountdown();
+  return `<div class="card side-card retirement-card">
+    <h3>Countdown to retirement</h3>
+    <div class="retirement-stats">
+      <div class="retirement-stat"><span class="num">${c.weeks}</span><span class="lbl">teaching weeks</span></div>
+      <div class="retirement-stat"><span class="num">${c.days}</span><span class="lbl">teaching days</span></div>
+      <div class="retirement-stat"><span class="num">${c.lessons}</span><span class="lbl">lessons</span></div>
+    </div>
+    <p class="empty-note" style="margin:10px 0 0;">to go until ${fmtLong(fromISO(RETIREMENT_DATE))} — lessons excludes Y11 & Y13 from June</p>
+  </div>`;
+}
 function renderDashboard(){
   const today = state.dashboardDate;
   const isActualToday = toISO(today)===toISO(new Date());
@@ -1073,6 +1142,7 @@ function renderDashboard(){
         ${isSchoolDay ? periodsHtml : `<p class="empty-note">No timetabled lessons today. Enjoy the weekend, Andy.</p>`}
       </div>
       <div>
+        ${renderRetirementCard()}
         <div class="card side-card">
           <h3>This week</h3>
           ${weekEventsHtml}
