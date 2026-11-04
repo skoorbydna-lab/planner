@@ -778,6 +778,13 @@ function dayKeyOf(d){
   return DAYS[(d.getDay()+6)%7] || null; // null for weekend
 }
 function weekTypeFor(d){
+  // The school calendar is the source of truth: it labels each teaching week
+  // A or B and does NOT count holiday weeks, so a plain alternation drifts
+  // out of step after half term / Christmas / Easter.
+  const mondayISO = toISO(getMonday(d));
+  const calWeek = TERM_CALENDAR.find(w=>w.wb===mondayISO);
+  if(calWeek && calWeek.type) return calWeek.type;
+  // Fallback for dates outside the calendar: simple alternation from the anchor.
   const anchor = getMonday(fromISO(store.weekAnchor));
   const monday = getMonday(d);
   const diffWeeks = Math.round((monday - anchor) / (7*24*3600*1000));
