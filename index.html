@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Andy Brooks — Weekly Planner</title>
+<title>Weekly Lesson Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -544,6 +544,33 @@ label.field-label{
   opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+/* ============================= SETUP ============================= */
+body.setup-mode .sidebar, body.setup-mode .nav-reveal{display:none;}
+body.setup-mode .main{margin-left:0;margin-right:auto;margin-left:auto;max-width:860px;}
+.setup-step{margin-bottom:20px;padding:22px 24px;}
+.setup-step h3{margin:0 0 4px;font-family:'Fraunces',serif;font-weight:600;font-size:19px;}
+.setup-step .step-num{display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--forest);color:#fff;font-size:13px;text-align:center;line-height:24px;margin-right:8px;font-family:'Libre Franklin',sans-serif;}
+.setup-step p.hint{margin:0 0 14px;color:var(--ink-soft);font-size:13.5px;line-height:1.5;}
+.setup-class-row{display:grid;grid-template-columns:130px 1fr 120px 36px;gap:8px;margin-bottom:8px;align-items:center;}
+.setup-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.setup-tab{padding:7px 14px;border-radius:7px;border:1px solid var(--line);background:var(--paper-card);cursor:pointer;font-size:13.5px;font-weight:500;}
+.setup-tab.active{background:var(--forest);border-color:var(--forest);color:#fff;}
+.setup-slot{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;margin-bottom:8px;align-items:center;}
+.setup-slot .lbl{font-size:13.5px;font-weight:600;color:var(--ink-soft);}
+.setup-check{display:flex;gap:9px;align-items:flex-start;font-size:14px;margin:10px 0;line-height:1.45;cursor:pointer;}
+.setup-check input{margin-top:3px;}
+select.input{appearance:auto;}
+.setup-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.setup-err{color:var(--brick);font-size:13.5px;margin:0 0 8px;}
+@media (max-width:860px){
+  .setup-class-row{grid-template-columns:1fr 1fr 36px;}
+  .setup-class-row .sc-label{grid-column:1 / 3;order:3;}
+  .setup-class-row .sc-colour{order:2;}
+  .setup-class-row .sc-del{order:2;}
+  .setup-slot{grid-template-columns:84px 1fr 70px;}
+  .setup-step{padding:18px 16px;}
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -553,7 +580,7 @@ label.field-label{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
   </button>
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-brand">Andy Brooks</div>
+    <div class="sidebar-brand" id="brand">Weekly Planner</div>
     <div class="sidebar-sub">Weekly Planner</div>
     <div id="nav-items"></div>
     <div class="sidebar-foot">Saved automatically<br>on this device.</div>
@@ -650,6 +677,7 @@ const WEEK_ANCHOR_TYPE = 'A';
 // Retirement countdown — last day of this school year, per the termly
 // calendar ("Term ends Thu 22 July" in the final week).
 const RETIREMENT_DATE = '2027-07-22';
+const SCHOOL_YEAR_END = RETIREMENT_DATE; // default date offered in first-run setup
 // Y11 and Y13 leave early for study leave/exams — their lessons in June
 // and July no longer count towards "lessons remaining" after this date.
 const EARLY_LEAVERS_CUTOFF = '2027-05-31';
@@ -727,8 +755,27 @@ function defaultStore(){
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
     weekAnchor: WEEK_ANCHOR,
     weekAnchorType: WEEK_ANCHOR_TYPE,
+    profile: null,         // {setupDone, kind:'andy'|'custom', name, countdown:{enabled,label,date,excludeEarly,cutoff}}
+    customTimetable: null, // full A/B grid for teachers who ran setup (null = built-in default timetable)
     lastModified: 0
   };
+}
+// Data saved before the setup screen existed belongs to the original
+// built-in timetable; give it a profile so it keeps working unchanged.
+function legacyProfile(){
+  return {setupDone:true, kind:'andy', name:'Andy Brooks',
+    countdown:{enabled:true, label:'Countdown to retirement', date:RETIREMENT_DATE, excludeEarly:true, cutoff:EARLY_LEAVERS_CUTOFF}};
+}
+function normalizeStore(obj){
+  const st = Object.assign(defaultStore(), obj);
+  if(!st.profile) st.profile = legacyProfile();
+  return st;
+}
+function needsSetup(){ return !store.profile || !store.profile.setupDone; }
+function baseClasses(){ return (store.profile && store.profile.kind==='custom') ? {} : DEFAULT_CLASSES; }
+function baseTimetable(){
+  if(store.profile && store.profile.kind==='custom') return store.customTimetable || {A:{},B:{}};
+  return DEFAULT_TIMETABLE;
 }
 
 let store = loadStore();
@@ -738,7 +785,7 @@ function loadStore(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return defaultStore();
     const parsed = JSON.parse(raw);
-    return Object.assign(defaultStore(), parsed);
+    return normalizeStore(parsed);
   }catch(e){
     console.error('Could not read saved planner data, starting fresh.', e);
     return defaultStore();
@@ -751,7 +798,12 @@ function persist(){
   }catch(e){
     showToast('Could not save — your browser storage may be full.');
   }
+  scheduleDriveUpload();
 }
+// When signed in to Google, push changes to Drive a few seconds after the last edit.
+const scheduleDriveUpload = debounce(()=>{
+  if(typeof driveSignedIn!=='undefined' && driveSignedIn && !driveBusy && !needsSetup()) driveSyncNow(true);
+}, 4000);
 
 /* ======================================================================
    UTILITIES
@@ -797,13 +849,14 @@ function weekTypeFor(d){
 function classInfo(code){
   if(!code) return null;
   const override = store.classMeta[code];
-  const base = DEFAULT_CLASSES[code] || {label:code, color:'slate'};
+  const base = baseClasses()[code] || {label:code, color:'slate'};
   return Object.assign({}, base, override||{});
 }
 function getSlot(weekType, day, periodKey){
   const override = store.timetableOverrides?.[weekType]?.[day]?.[periodKey];
   if(override !== undefined) return override; // includes explicit null (marked free)
-  return DEFAULT_TIMETABLE[weekType][day][periodKey];
+  const v = baseTimetable()?.[weekType]?.[day]?.[periodKey];
+  return v === undefined ? null : v;
 }
 // Layers: a one-off daily override (cover, single room change) > the
 // permanent weekly-pattern override > the default timetable.
@@ -880,7 +933,9 @@ function isTeachingDay(dateISO){
 // matching how the rest of the app treats doubles.
 function computeRetirementCountdown(){
   const todayMonday = getMonday(new Date());
-  const retirementEnd = fromISO(RETIREMENT_DATE);
+  const cd = (store.profile && store.profile.countdown) || {};
+  const retirementEnd = fromISO(cd.date || RETIREMENT_DATE);
+  const cutoff = cd.cutoff || EARLY_LEAVERS_CUTOFF;
   const weeks = TERM_CALENDAR.filter(wk=>!wk.holiday && fromISO(wk.wb) >= todayMonday && fromISO(wk.wb) <= retirementEnd).length;
   let days = 0, lessons = 0;
   let cur = new Date(); cur.setHours(0,0,0,0);
@@ -888,7 +943,7 @@ function computeRetirementCountdown(){
     const iso = toISO(cur);
     if(isTeachingDay(iso)){
       days++;
-      const pastLeaversCutoff = iso > EARLY_LEAVERS_CUTOFF;
+      const pastLeaversCutoff = !!cd.excludeEarly && iso > cutoff;
       computeDayRows(iso).forEach(row=>{
         if((row.type==='single' || row.type==='double') && row.slot){
           if(pastLeaversCutoff && EARLY_LEAVER_YEAR_PREFIX.test(row.slot.class)) return;
@@ -931,8 +986,13 @@ function setLesson(dateISO, periodKey, data){
   persist();
 }
 function allClassCodes(){
-  const set = new Set(Object.keys(DEFAULT_CLASSES));
+  const set = new Set(Object.keys(baseClasses()));
   Object.keys(store.classMeta).forEach(c=>set.add(c));
+  const tt = baseTimetable();
+  ['A','B'].forEach(w=>DAYS.forEach(d=>PERIODS.forEach(pr=>{
+    const sl = tt?.[w]?.[d]?.[pr.key]; if(sl && sl.class) set.add(sl.class);
+    const ov = store.timetableOverrides?.[w]?.[d]?.[pr.key]; if(ov && ov.class) set.add(ov.class);
+  })));
   return Array.from(set);
 }
 function weekOf(dateISO){
@@ -1052,33 +1112,45 @@ function renderSidebar(){
   });
 }
 
+function applyBranding(){
+  const name = (store.profile && store.profile.name || '').trim();
+  document.getElementById('brand').textContent = name || 'Weekly Planner';
+  document.title = name ? name+' — Weekly Planner' : 'Weekly Lesson Planner';
+}
 function render(){
+  if(needsSetup()) state.route = 'setup';
+  document.body.classList.toggle('setup-mode', state.route==='setup');
+  applyBranding();
   renderSidebar();
   const main = document.getElementById('main');
-  if(state.route==='dashboard') main.innerHTML = renderDashboard();
+  if(state.route==='setup') main.innerHTML = renderSetup();
+  else if(state.route==='dashboard') main.innerHTML = renderDashboard();
   else if(state.route==='weekly') main.innerHTML = renderWeekly();
   else if(state.route==='daily') main.innerHTML = renderDaily();
   else if(state.route==='calendar') main.innerHTML = renderCalendar();
   else if(state.route==='plans') main.innerHTML = renderPlans();
   else if(state.route==='settings') main.innerHTML = renderSettings();
   attachRouteHandlers();
+  if(state.route==='setup') attachSetupHandlers();
 }
 
 /* ======================================================================
    DASHBOARD
    ====================================================================== */
 function renderRetirementCard(){
+  const cd = store.profile && store.profile.countdown;
+  if(!cd || !cd.enabled || !cd.date) return '';
   const todayISO = toISO(new Date());
-  if(todayISO > RETIREMENT_DATE) return '';
+  if(todayISO > cd.date) return '';
   const c = computeRetirementCountdown();
   return `<div class="card side-card retirement-card">
-    <h3>Countdown to retirement</h3>
+    <h3>${escapeHtml(cd.label || 'End of school year countdown')}</h3>
     <div class="retirement-stats">
       <div class="retirement-stat"><span class="num">${c.weeks}</span><span class="lbl">teaching weeks</span></div>
       <div class="retirement-stat"><span class="num">${c.days}</span><span class="lbl">teaching days</span></div>
       <div class="retirement-stat"><span class="num">${c.lessons}</span><span class="lbl">lessons</span></div>
     </div>
-    <p class="empty-note" style="margin:10px 0 0;">to go until ${fmtLong(fromISO(RETIREMENT_DATE))} — lessons excludes Y11 & Y13 from June</p>
+    <p class="empty-note" style="margin:10px 0 0;">to go until ${fmtLong(fromISO(cd.date))}${cd.excludeEarly ? ' — lessons excludes Y11 & Y13 after '+fmtShort(fromISO(cd.cutoff||EARLY_LEAVERS_CUTOFF)) : ''}</p>
   </div>`;
 }
 function renderDashboard(){
@@ -1146,7 +1218,7 @@ function renderDashboard(){
     </div>
     <div class="dash-grid">
       <div class="card" style="padding:20px 22px;">
-        ${isSchoolDay ? periodsHtml : `<p class="empty-note">No timetabled lessons today. Enjoy the weekend, Andy.</p>`}
+        ${isSchoolDay ? periodsHtml : `<p class="empty-note">No timetabled lessons today. Enjoy the weekend.</p>`}
       </div>
       <div>
         ${renderRetirementCard()}
@@ -1526,6 +1598,12 @@ function renderSettings(){
     </div>
 
     <div class="card settings-block">
+      <h3>Profile & timetable setup</h3>
+      <p>Change your name, classes, A/B timetable or end-of-year countdown. Your lesson notes and plans are kept.</p>
+      <button class="btn btn-primary" id="open-setup-btn">Open setup</button>
+    </div>
+
+    <div class="card settings-block">
       <h3>Reset</h3>
       <p>Clears all lesson notes, plans and timetable edits from this browser and starts fresh. This does not delete your file in Google Drive.</p>
       <button class="btn btn-danger" id="reset-btn">Reset all data</button>
@@ -1670,6 +1748,260 @@ function openAfterModal(dateISO){
     close();
     render();
   };
+}
+
+
+/* ======================================================================
+   FIRST-RUN SETUP — name, classes, A/B timetable, optional countdown.
+   Also reachable later from Settings to change any of it.
+   ====================================================================== */
+const SETUP_SLOTS = [['reg','Registration'],['p1','Period 1'],['p2','Period 2'],['p3','Period 3'],['p4','Period 4'],['p5','Period 5'],['p6','Period 6']];
+const CLASS_COLOURS = ['forest','gold','brick','slate','teal','navy','plum','rust','olive','clay','berry'];
+let setupDraft = null;
+let setupUi = {week:'A', day:'Mon', editing:false, error:''};
+
+function uid(){ return 'c'+Math.random().toString(36).slice(2,9); }
+function cap(w){ return w.charAt(0).toUpperCase()+w.slice(1); }
+
+function newSetupDraft(){
+  const p = store.profile;
+  const d = {
+    name: p ? (p.name||'') : '',
+    classes: [], grid:{A:{},B:{}},
+    sameBothWeeks:false, mergeDoubles:true,
+    cd:{enabled:false, label:'End of school year countdown', date:SCHOOL_YEAR_END, excludeEarly:false, cutoff:EARLY_LEAVERS_CUTOFF}
+  };
+  DAYS.forEach(day=>{ d.grid.A[day]={}; d.grid.B[day]={}; });
+  if(p && p.setupDone){
+    // Pre-fill from what is in use right now so re-running setup loses nothing.
+    const idByCode = {};
+    allClassCodes().forEach(code=>{
+      const i = classInfo(code), id = uid();
+      idByCode[code] = id;
+      d.classes.push({id, code, label:i.label, color:i.color});
+    });
+    ['A','B'].forEach(w=>DAYS.forEach(day=>SETUP_SLOTS.forEach(([k])=>{
+      const sl = getSlot(w,day,k);
+      if(sl && sl.class) d.grid[w][day][k] = {cls:idByCode[sl.class]||'', room:sl.room||'', dbl:!!sl.double};
+    })));
+    if(p.countdown) d.cd = Object.assign({}, d.cd, p.countdown);
+    d.mergeDoubles = false; // keep exactly the doubles already in use (carried per cell as `dbl`)
+  }else{
+    d.classes.push({id:uid(), code:'', label:'', color:CLASS_COLOURS[0]});
+  }
+  return d;
+}
+
+function setupClassesHtml(){
+  const d = setupDraft;
+  return d.classes.map(c=>`
+    <div class="setup-class-row" data-cid="${c.id}">
+      <input class="input sc-code" placeholder="Code, e.g. 10A/Ma" value="${escapeHtml(c.code)}" aria-label="Class code">
+      <input class="input sc-label" placeholder="Display name (optional)" value="${escapeHtml(c.label===c.code?'':c.label)}" aria-label="Display name">
+      <select class="input sc-colour" aria-label="Colour">${CLASS_COLOURS.map(col=>`<option value="${col}" ${c.color===col?'selected':''}>${cap(col)}</option>`).join('')}</select>
+      <button class="icon-btn sc-del" title="Remove this class" aria-label="Remove class">${ICONS.close}</button>
+    </div>`).join('') +
+    `<button class="btn btn-sm" data-act="add-class" style="margin-top:4px;">+ Add a class</button>`;
+}
+function setupTimetableHtml(){
+  const d = setupDraft, ui = setupUi;
+  const named = d.classes.filter(c=>c.code.trim());
+  if(!named.length){
+    return `<p class="empty-note">Add at least one class above and it will appear here.</p>`;
+  }
+  const opts = sel => `<option value="">— Free —</option>` + named.map(c=>{
+    const code = c.code.trim(), lab = (c.label||'').trim();
+    return `<option value="${c.id}" ${sel===c.id?'selected':''}>${escapeHtml(code)}${lab && lab!==code ? ' — '+escapeHtml(lab) : ''}</option>`;
+  }).join('');
+  const week = d.sameBothWeeks ? 'A' : ui.week;
+  const dayCells = d.grid[week][ui.day] || {};
+  return `
+    <label class="setup-check"><input type="checkbox" id="su-same" ${d.sameBothWeeks?'checked':''}> <span>My timetable is the same every week (no Week A / Week B)</span></label>
+    ${d.sameBothWeeks ? '' : `<div class="setup-tabs">
+      ${['A','B'].map(w=>`<button class="setup-tab ${ui.week===w?'active':''}" data-week="${w}">Week ${w}</button>`).join('')}
+      <button class="btn btn-sm btn-ghost" data-act="copy-ab" title="Copy everything from Week A into Week B">Copy Week A → Week B</button>
+    </div>`}
+    <div class="setup-tabs">
+      ${DAYS.map(day=>`<button class="setup-tab ${ui.day===day?'active':''}" data-day="${day}">${DAY_FULL[day]}</button>`).join('')}
+    </div>
+    ${SETUP_SLOTS.map(([k,label])=>{
+      const cell = dayCells[k] || {cls:'', room:''};
+      return `<div class="setup-slot"><span class="lbl">${label}</span>
+        <select class="input st-cls" data-key="${k}" aria-label="${label} class">${opts(cell.cls)}</select>
+        <input class="input st-room" data-key="${k}" placeholder="Room" value="${escapeHtml(cell.room||'')}" aria-label="${label} room"></div>`;
+    }).join('')}
+    <label class="setup-check"><input type="checkbox" id="su-merge" ${d.mergeDoubles?'checked':''}> <span>Show back-to-back lessons of the same class and room (Periods 1–2, 3–4 or 5–6) as one double lesson</span></label>`;
+}
+function setupCountdownHtml(){
+  const cd = setupDraft.cd;
+  return `
+    <label class="setup-check"><input type="checkbox" id="cd-enabled" ${cd.enabled?'checked':''}> <span>Show a countdown on my dashboard (teaching weeks, days and lessons left)</span></label>
+    ${cd.enabled ? `
+      <div class="field-group"><label class="field-label">Countdown title</label>
+        <input class="input" id="cd-label" value="${escapeHtml(cd.label)}"></div>
+      <div class="field-group"><label class="field-label">Count down to</label>
+        <input class="input" type="date" id="cd-date" value="${escapeHtml(cd.date)}" style="width:auto;"></div>
+      <label class="setup-check"><input type="checkbox" id="cd-early" ${cd.excludeEarly?'checked':''}> <span>Year 11 &amp; 13 leave early — don't count their lessons after a set date (applies to class codes starting 11 or 13)</span></label>
+      ${cd.excludeEarly ? `<div class="field-group"><label class="field-label">Don't count Y11 &amp; Y13 lessons after</label>
+        <input class="input" type="date" id="cd-cutoff" value="${escapeHtml(cd.cutoff)}" style="width:auto;"></div>` : ''}
+    ` : ''}`;
+}
+function renderSetup(){
+  if(!setupDraft) setupDraft = newSetupDraft();
+  const d = setupDraft, ui = setupUi;
+  const editing = !!(store.profile && store.profile.setupDone);
+  return `
+    <div class="page-head">
+      <p class="page-eyebrow">${editing ? 'Settings' : 'Welcome'}</p>
+      <h1 class="page-title">${editing ? 'Profile & timetable' : 'Set up your planner'}</h1>
+    </div>
+    ${editing ? '' : `
+    <div class="card setup-step">
+      <h3>Already use this planner?</h3>
+      <p class="hint">If you've set it up on another device, sign in with the same Google account and your timetable and notes will load.</p>
+      <button class="btn btn-primary" data-act="google" ${driveBusy?'disabled':''}>${driveBusy?'Connecting…':'Sign in with Google'}</button>
+    </div>`}
+    <div class="card setup-step">
+      <h3><span class="step-num">1</span>About you</h3>
+      <p class="hint">Shown at the top of the menu.</p>
+      <label class="field-label">Your name</label>
+      <input class="input" id="su-name" placeholder="e.g. Ms Patel" value="${escapeHtml(d.name)}">
+    </div>
+    <div class="card setup-step">
+      <h3><span class="step-num">2</span>Your classes</h3>
+      <p class="hint">Add each class you teach. The code is how it appears on your timetable; each class gets its own colour.</p>
+      <div id="sec-classes">${setupClassesHtml()}</div>
+    </div>
+    <div class="card setup-step">
+      <h3><span class="step-num">3</span>Your timetable</h3>
+      <p class="hint">Pick the class and room for each period. Leave a period as “Free” if you don't teach. You can fine-tune anything later from the Weekly Timetable page.</p>
+      <div id="sec-timetable">${setupTimetableHtml()}</div>
+    </div>
+    <div class="card setup-step">
+      <h3><span class="step-num">4</span>End-of-year countdown <span class="pill pill-muted" style="margin-left:6px;">optional</span></h3>
+      <div id="sec-countdown">${setupCountdownHtml()}</div>
+    </div>
+    ${ui.error ? `<p class="setup-err" id="setup-err">${escapeHtml(ui.error)}</p>` : ''}
+    <div class="setup-actions">
+      ${editing ? `<button class="btn btn-ghost" data-act="cancel">Cancel</button>` : ''}
+      <button class="btn btn-primary" data-act="finish">${editing ? 'Save changes' : 'Finish setup'}</button>
+    </div>`;
+}
+function setupRefresh(...ids){
+  const map = {classes:setupClassesHtml, timetable:setupTimetableHtml, countdown:setupCountdownHtml};
+  ids.forEach(id=>{ const el=document.getElementById('sec-'+id); if(el) el.innerHTML = map[id](); });
+}
+function finishSetup(){
+  const d = setupDraft;
+  const classes = d.classes.filter(c=>c.code.trim());
+  const lower = classes.map(c=>c.code.trim().toLowerCase());
+  const fail = msg=>{ setupUi.error = msg; render(); const e=document.getElementById('setup-err'); if(e) e.scrollIntoView({block:'center'}); };
+  if(new Set(lower).size !== lower.length) return fail('Two classes have the same code — please make each one different.');
+  if(d.cd.enabled && !d.cd.date) return fail('Please choose a date for the countdown, or switch it off.');
+  const codeById = {};
+  classes.forEach(c=>codeById[c.id] = c.code.trim());
+  const buildWeek = w=>{
+    const out = {};
+    DAYS.forEach(day=>{
+      out[day] = {};
+      SETUP_SLOTS.forEach(([k])=>{
+        const cell = d.grid[w][day] && d.grid[w][day][k];
+        out[day][k] = (cell && codeById[cell.cls]) ? {class:codeById[cell.cls], room:(cell.room||'').trim()} : null;
+      });
+      {
+        DOUBLE_PAIRS.forEach(([a,b])=>{
+          const x = out[day][a], y = out[day][b];
+          const cx = d.grid[w][day][a], cy = d.grid[w][day][b];
+          const carried = !!(cx && cy && cx.dbl && cy.dbl);
+          if(x && y && x.class===y.class && x.room===y.room && (d.mergeDoubles || carried)){ x.double = true; y.double = true; }
+        });
+      }
+    });
+    return out;
+  };
+  const A = buildWeek('A');
+  const B = d.sameBothWeeks ? JSON.parse(JSON.stringify(A)) : buildWeek('B');
+  const meta = {};
+  classes.forEach(c=>{ meta[c.code.trim()] = {label:(c.label||'').trim() || c.code.trim(), color:c.color}; });
+  store.profile = {
+    setupDone:true, kind:'custom', name:d.name.trim(),
+    countdown:{enabled:d.cd.enabled, label:(d.cd.label||'').trim() || 'End of school year countdown', date:d.cd.date, excludeEarly:d.cd.excludeEarly, cutoff:d.cd.cutoff}
+  };
+  store.customTimetable = {A, B};
+  store.classMeta = meta;
+  store.timetableOverrides = {};
+  persist();
+  setupDraft = null; setupUi = {week:'A', day:'Mon', editing:false, error:''};
+  state.route = 'dashboard';
+  render();
+  window.scrollTo(0,0);
+  showToast('Your planner is ready');
+}
+let setupHandlersInstalled = false;
+function attachSetupHandlers(){
+  if(setupHandlersInstalled) return;
+  setupHandlersInstalled = true;
+  const main = document.getElementById('main');
+  const on = (type, fn)=>main.addEventListener(type, e=>{ if(state.route==='setup' && setupDraft) fn(e); });
+  on('click', e=>{
+    const t = e.target.closest('button'); if(!t) return;
+    const d = setupDraft;
+    if(t.dataset.act==='add-class'){
+      const used = new Set(d.classes.map(c=>c.color));
+      const color = CLASS_COLOURS.find(c=>!used.has(c)) || CLASS_COLOURS[d.classes.length % CLASS_COLOURS.length];
+      d.classes.push({id:uid(), code:'', label:'', color});
+      setupRefresh('classes');
+      const rows = document.querySelectorAll('.setup-class-row .sc-code');
+      if(rows.length) rows[rows.length-1].focus();
+    }else if(t.classList.contains('sc-del')){
+      const id = t.closest('.setup-class-row').dataset.cid;
+      d.classes = d.classes.filter(c=>c.id!==id);
+      ['A','B'].forEach(w=>DAYS.forEach(day=>Object.keys(d.grid[w][day]||{}).forEach(k=>{ if(d.grid[w][day][k].cls===id) d.grid[w][day][k].cls=''; })));
+      setupRefresh('classes','timetable');
+    }else if(t.dataset.week){
+      setupUi.week = t.dataset.week; setupRefresh('timetable');
+    }else if(t.dataset.day){
+      setupUi.day = t.dataset.day; setupRefresh('timetable');
+    }else if(t.dataset.act==='copy-ab'){
+      d.grid.B = JSON.parse(JSON.stringify(d.grid.A)); setupUi.week='B'; setupRefresh('timetable'); showToast('Copied Week A into Week B');
+    }else if(t.dataset.act==='finish'){
+      setupUi.error=''; finishSetup();
+    }else if(t.dataset.act==='cancel'){
+      setupDraft = null; setupUi.error=''; setupUi.editing=false; navigate('settings');
+    }else if(t.dataset.act==='google'){
+      driveSignIn();
+    }
+  });
+  on('input', e=>{
+    const t = e.target, d = setupDraft;
+    const row = t.closest('.setup-class-row');
+    if(t.id==='su-name') d.name = t.value;
+    else if(row && t.classList.contains('sc-code')) d.classes.find(c=>c.id===row.dataset.cid).code = t.value;
+    else if(row && t.classList.contains('sc-label')) d.classes.find(c=>c.id===row.dataset.cid).label = t.value;
+    else if(t.classList.contains('st-room')){
+      const w = d.sameBothWeeks ? 'A' : setupUi.week;
+      const cells = d.grid[w][setupUi.day]; if(!cells[t.dataset.key]) cells[t.dataset.key] = {cls:'', room:''};
+      cells[t.dataset.key].room = t.value; cells[t.dataset.key].dbl = false;
+    }
+    else if(t.id==='cd-label') d.cd.label = t.value;
+    else if(t.id==='cd-date') d.cd.date = t.value;
+    else if(t.id==='cd-cutoff') d.cd.cutoff = t.value;
+  });
+  on('change', e=>{
+    const t = e.target, d = setupDraft;
+    const row = t.closest('.setup-class-row');
+    if(row && (t.classList.contains('sc-code') || t.classList.contains('sc-label'))) setupRefresh('timetable');
+    else if(row && t.classList.contains('sc-colour')) d.classes.find(c=>c.id===row.dataset.cid).color = t.value;
+    else if(t.classList.contains('st-cls')){
+      const w = d.sameBothWeeks ? 'A' : setupUi.week;
+      const cells = d.grid[w][setupUi.day]; if(!cells[t.dataset.key]) cells[t.dataset.key] = {cls:'', room:''};
+      cells[t.dataset.key].cls = t.value; cells[t.dataset.key].dbl = false;
+    }
+    else if(t.id==='su-same'){ d.sameBothWeeks = t.checked; setupRefresh('timetable'); }
+    else if(t.id==='su-merge') d.mergeDoubles = t.checked;
+    else if(t.id==='cd-enabled'){ d.cd.enabled = t.checked; setupRefresh('countdown'); }
+    else if(t.id==='cd-early'){ d.cd.excludeEarly = t.checked; setupRefresh('countdown'); }
+  });
 }
 
 /* ======================================================================
@@ -1821,10 +2153,12 @@ function attachRouteHandlers(){
   if(state.route==='settings'){
     document.getElementById('export-btn').onclick = exportData;
     document.getElementById('import-file').onchange = importData;
+    document.getElementById('open-setup-btn').onclick = ()=>{ setupDraft = null; setupUi.editing = true; navigate('setup'); };
     document.getElementById('reset-btn').onclick = ()=>{
       if(confirm('This will permanently erase all saved lesson notes, plans and timetable edits from this browser. Continue?')){
         store = defaultStore();
-        persist();
+        try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+        setupDraft = null; setupUi.editing = false;
         showToast('All data reset.');
         navigate('dashboard');
       }
@@ -1864,7 +2198,7 @@ function exportData(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `andy-brooks-planner-backup-${toISO(new Date())}.json`;
+  a.download = `lesson-planner-backup-${toISO(new Date())}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1879,7 +2213,7 @@ function importData(e){
     try{
       const parsed = JSON.parse(reader.result);
       if(!confirm('Import this backup? It will replace all data currently saved in this browser.')) return;
-      store = Object.assign(defaultStore(), parsed);
+      store = normalizeStore(parsed);
       persist();
       showToast('Backup imported');
       navigate('dashboard');
@@ -1928,7 +2262,8 @@ function importData(e){
    ====================================================================== */
 const GOOGLE_CLIENT_ID = '906248134114-q0kkee9cntkjttl9laickus81s4reaf4.apps.googleusercontent.com';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-const DRIVE_FILENAME = 'andy-brooks-planner-data.json';
+const DRIVE_FILENAME = 'lesson-planner-data.json';
+const DRIVE_LEGACY_FILENAME = 'andy-brooks-planner-data.json'; // files created before the planner was shared
 
 let gTokenClient = null;
 let gAccessToken = null;
@@ -1953,7 +2288,7 @@ function driveInit(){
         driveBusy = false;
         if(resp.error){
           driveSignedIn = false;
-          if(state.route==='settings') render();
+          if(state.route==='settings' || state.route==='setup') render();
           return;
         }
         gAccessToken = resp.access_token;
@@ -1972,7 +2307,7 @@ function driveSignIn(){
   if(!gTokenClient){ showToast('Still loading Google sign-in — try again in a moment.'); return; }
   driveBusy = true;
   gTokenClient.requestAccessToken({prompt:'consent'});
-  if(state.route==='settings') render();
+  if(state.route==='settings' || state.route==='setup') render();
 }
 function driveSignOut(){
   if(gAccessToken) google.accounts.oauth2.revoke(gAccessToken, ()=>{});
@@ -1980,7 +2315,7 @@ function driveSignOut(){
   localStorage.removeItem('plannerDriveConnected');
   localStorage.removeItem('plannerDriveEmail');
   showToast('Disconnected from Google Drive');
-  if(state.route==='settings') render();
+  if(state.route==='settings' || state.route==='setup') render();
 }
 async function fetchDriveProfile(){
   try{
@@ -1994,13 +2329,15 @@ function driveHeaders(extra){
   return Object.assign({'Authorization':'Bearer '+gAccessToken}, extra||{});
 }
 async function driveFindFile(){
-  const q = encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`, {headers:driveHeaders()});
-  const data = await res.json();
-  if(data.files && data.files.length){
-    driveFileId = data.files[0].id;
-    localStorage.setItem('plannerDriveFileId', driveFileId);
-    return driveFileId;
+  for(const name of [DRIVE_FILENAME, DRIVE_LEGACY_FILENAME]){
+    const q = encodeURIComponent(`name='${name}' and trashed=false`);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`, {headers:driveHeaders()});
+    const data = await res.json();
+    if(data.files && data.files.length){
+      driveFileId = data.files[0].id;
+      localStorage.setItem('plannerDriveFileId', driveFileId);
+      return driveFileId;
+    }
   }
   return null;
 }
@@ -2044,7 +2381,7 @@ async function driveDownload(){
 async function driveSyncNow(silent){
   if(!gAccessToken){ if(!silent) showToast('Not signed in to Google.'); return; }
   driveBusy = true;
-  if(state.route==='settings') render();
+  if(state.route==='settings' || state.route==='setup') render();
   try{
     const remoteText = await driveDownload();
     if(remoteText){
@@ -2052,26 +2389,28 @@ async function driveSyncNow(silent){
       const remoteTime = remote.lastModified||0;
       const localTime = store.lastModified||0;
       if(remoteTime > localTime){
-        store = Object.assign(defaultStore(), remote);
+        store = normalizeStore(remote);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
         showToast('Loaded the latest version from Google Drive');
         render();
-      }else if(localTime > remoteTime){
+      }else if(localTime > remoteTime && !needsSetup()){
         await driveUpload(JSON.stringify(store));
         showToast('Backed up to Google Drive');
       }else if(!silent){
         showToast('Already up to date');
       }
-    }else{
+    }else if(!needsSetup()){
       await driveUpload(JSON.stringify(store));
       showToast('Backed up to Google Drive');
+    }else if(!silent){
+      showToast('No saved planner found in this Google account yet — fill in the setup below.');
     }
   }catch(err){
     console.error(err);
     if(!silent) showToast('Drive sync failed — check your connection and try again.');
   }
   driveBusy = false;
-  if(state.route==='settings') render();
+  if(state.route==='settings' || state.route==='setup') render();
 }
 
 /* ======================================================================
