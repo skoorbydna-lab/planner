@@ -396,6 +396,29 @@ label.field-label{
 .retirement-stat .lbl{display:block;font-size:10.5px;color:#D7E0D8;margin-top:3px;text-transform:uppercase;letter-spacing:.03em;}
 .retirement-card .empty-note{color:#C3CFC4;}
 
+/* ============================= TO-DO LISTS ============================= */
+.todo-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.todo-head h3{font-family:var(--font-display);font-weight:500;font-size:16px;margin:0;}
+.todo-count{font-size:12px;color:var(--ink-faint);white-space:nowrap;}
+.todo-list{list-style:none;margin:0 0 10px;padding:0;}
+.todo-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line-soft);}
+.todo-item:last-child{border-bottom:none;}
+.todo-check{width:17px;height:17px;flex-shrink:0;accent-color:var(--forest);cursor:pointer;margin:0;}
+.todo-text{flex:1;min-width:0;border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;font:inherit;font-size:13.5px;color:var(--ink);}
+.todo-text:hover{border-color:var(--line-soft);}
+.todo-text:focus{border-color:var(--forest-light);background:#fff;outline:none;}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--ink-faint);}
+.todo-del{flex-shrink:0;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:6px;color:var(--ink-faint);cursor:pointer;}
+.todo-del svg{width:13px;height:13px;}
+.todo-del:hover,.todo-del:focus-visible{background:var(--brick-wash);color:var(--brick);}
+.todo-add{display:flex;gap:6px;}
+.todo-add .input{padding:7px 10px;font-size:13.5px;}
+.todo-actions{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;}
+.todo-actions button{border:none;background:none;padding:2px 0;font-size:12px;color:var(--ink-soft);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.todo-actions button:hover{color:var(--ink);}
+.todo-card-wide{padding:18px 22px;margin-top:20px;max-width:620px;}
+.todo-card-daily{padding:18px 22px;margin-bottom:18px;}
+
 /* ============================= TIMETABLE GRID ============================= */
 .week-nav{
   display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;
@@ -753,6 +776,7 @@ function defaultStore(){
     dailyOverrides: {},    // "YYYY-MM-DD_periodKey" -> {class, room} (one-off, e.g. cover or a single room change)
     customEvents: {},      // "YYYY-MM-DD" -> array of manually-added calendar/meeting notes for that date
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
+    todos: {week:{}, day:{}}, // week: Monday "YYYY-MM-DD" -> [{id,text,done}], day: "YYYY-MM-DD" -> [{id,text,done}]
     weekAnchor: WEEK_ANCHOR,
     weekAnchorType: WEEK_ANCHOR_TYPE,
     profile: null,         // {setupDone, kind:'andy'|'custom', name, countdown:{enabled,label,date,excludeEarly,cutoff}}
@@ -769,6 +793,9 @@ function legacyProfile(){
 function normalizeStore(obj){
   const st = Object.assign(defaultStore(), obj);
   if(!st.profile) st.profile = legacyProfile();
+  if(!st.todos || typeof st.todos!=='object') st.todos = {};
+  if(!st.todos.week) st.todos.week = {};
+  if(!st.todos.day) st.todos.day = {};
   return st;
 }
 function needsSetup(){ return !store.profile || !store.profile.setupDone; }
@@ -1135,6 +1162,147 @@ function render(){
 }
 
 /* ======================================================================
+   TO-DO LISTS (weekly + daily)
+   ====================================================================== */
+function todoList(scope, key){
+  return (store.todos[scope] && store.todos[scope][key]) || [];
+}
+function saveTodoList(scope, key, list){
+  if(list.length) store.todos[scope][key] = list;
+  else delete store.todos[scope][key];
+  persist();
+}
+function nextWeekdayISO(iso){
+  let d = addDays(fromISO(iso), 1);
+  while(!dayKeyOf(d)) d = addDays(d, 1);
+  return toISO(d);
+}
+function todoTitle(scope, key){
+  const today = new Date();
+  if(scope==='week'){
+    if(key===toISO(getMonday(today))) return "This week's to-dos";
+    return 'To-dos for week of '+fmtShort(fromISO(key));
+  }
+  if(key===toISO(today)) return "Today's to-dos";
+  return 'To-dos for '+fmtShort(fromISO(key));
+}
+function renderTodoCard(scope, key, extraClass){
+  const list = todoList(scope, key);
+  const open = list.filter(t=>!t.done);
+  const done = list.filter(t=>t.done);
+  const items = open.concat(done).map(t=>`
+    <li class="todo-item ${t.done?'done':''}" data-id="${t.id}">
+      <input type="checkbox" class="todo-check" ${t.done?'checked':''} aria-label="Mark as ${t.done?'not done':'done'}">
+      <input type="text" class="todo-text" value="${escapeHtml(t.text)}" aria-label="To-do">
+      <button type="button" class="todo-del" aria-label="Delete to-do" title="Delete">${ICONS.close}</button>
+    </li>`).join('');
+  const moveLabel = scope==='week' ? 'Move unfinished to next week' : 'Move unfinished to next school day';
+  const actions = [];
+  if(open.length && list.length) actions.push(`<button type="button" data-todo-act="move">${moveLabel}</button>`);
+  if(done.length) actions.push(`<button type="button" data-todo-act="clear">Clear completed</button>`);
+  return `<div class="card ${extraClass||'side-card'} todo-card" data-scope="${scope}" data-key="${key}">
+    <div class="todo-head">
+      <h3>${todoTitle(scope, key)}</h3>
+      ${list.length? `<span class="todo-count">${done.length} of ${list.length} done</span>` : ''}
+    </div>
+    ${list.length? `<ul class="todo-list">${items}</ul>` : ''}
+    <div class="todo-add">
+      <input type="text" class="input todo-new" placeholder="${scope==='week'?'Add something to do this week':'Add something to do'}" aria-label="New to-do">
+      <button type="button" class="btn btn-sm" data-todo-act="add">Add</button>
+    </div>
+    ${actions.length? `<div class="todo-actions">${actions.join('')}</div>` : ''}
+  </div>`;
+}
+// Re-render only the to-do cards on screen, so typing elsewhere on the page is never interrupted.
+function refreshTodoCards(focus){
+  document.querySelectorAll('.todo-card').forEach(card=>{
+    const {scope, key} = card.dataset;
+    const cls = ['side-card','todo-card-wide','todo-card-daily'].find(c=>card.classList.contains(c));
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderTodoCard(scope, key, cls).trim();
+    card.replaceWith(tmp.firstChild);
+  });
+  if(focus){
+    const sel = `.todo-card[data-scope="${focus.scope}"][data-key="${focus.key}"] .todo-new`;
+    const el = document.querySelector(sel);
+    if(el) el.focus();
+  }
+}
+function todoAdd(card){
+  const input = card.querySelector('.todo-new');
+  const text = input.value.trim();
+  if(!text){ input.focus(); return; }
+  const {scope, key} = card.dataset;
+  const list = todoList(scope, key).slice();
+  list.push({id:uid(), text, done:false});
+  saveTodoList(scope, key, list);
+  refreshTodoCards({scope, key});
+}
+function todoUpdate(card, id, fn){
+  const {scope, key} = card.dataset;
+  const list = todoList(scope, key).map(t=>({...t}));
+  const i = list.findIndex(t=>t.id===id);
+  if(i<0) return;
+  const keep = fn(list[i]);
+  if(keep===false) list.splice(i,1);
+  saveTodoList(scope, key, list);
+}
+function todoMoveUnfinished(card){
+  const {scope, key} = card.dataset;
+  const list = todoList(scope, key);
+  const open = list.filter(t=>!t.done);
+  if(!open.length) return;
+  const targetKey = scope==='week' ? toISO(addDays(fromISO(key),7)) : nextWeekdayISO(key);
+  store.todos[scope][targetKey] = todoList(scope, targetKey).concat(open);
+  saveTodoList(scope, key, list.filter(t=>t.done));
+  refreshTodoCards();
+  showToast(`Moved ${open.length} to ${scope==='week' ? 'week of '+fmtShort(fromISO(targetKey)) : fmtShort(fromISO(targetKey))}`);
+}
+// One set of listeners for every to-do card, on any page.
+document.addEventListener('click', e=>{
+  const card = e.target.closest('.todo-card');
+  if(!card) return;
+  const act = e.target.closest('[data-todo-act]');
+  if(act){
+    const a = act.dataset.todoAct;
+    if(a==='add') todoAdd(card);
+    if(a==='move') todoMoveUnfinished(card);
+    if(a==='clear'){
+      const {scope, key} = card.dataset;
+      saveTodoList(scope, key, todoList(scope, key).filter(t=>!t.done));
+      refreshTodoCards();
+    }
+    return;
+  }
+  const del = e.target.closest('.todo-del');
+  if(del){
+    todoUpdate(card, del.closest('.todo-item').dataset.id, ()=>false);
+    refreshTodoCards();
+  }
+});
+document.addEventListener('change', e=>{
+  const card = e.target.closest('.todo-card');
+  if(!card) return;
+  const item = e.target.closest('.todo-item');
+  if(!item) return;
+  if(e.target.classList.contains('todo-check')){
+    todoUpdate(card, item.dataset.id, t=>{ t.done = e.target.checked; });
+    refreshTodoCards();
+  }else if(e.target.classList.contains('todo-text')){
+    const text = e.target.value.trim();
+    todoUpdate(card, item.dataset.id, t=>{ if(!text) return false; t.text = text; });
+    if(!text) refreshTodoCards();
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter') return;
+  const card = e.target.closest && e.target.closest('.todo-card');
+  if(!card) return;
+  if(e.target.classList.contains('todo-new')){ e.preventDefault(); todoAdd(card); }
+  else if(e.target.classList.contains('todo-text')){ e.preventDefault(); e.target.blur(); }
+});
+
+/* ======================================================================
    DASHBOARD
    ====================================================================== */
 function renderRetirementCard(){
@@ -1222,6 +1390,8 @@ function renderDashboard(){
       </div>
       <div>
         ${renderRetirementCard()}
+        ${renderTodoCard('day', todayISO)}
+        ${renderTodoCard('week', toISO(getMonday(today)))}
         <div class="card side-card">
           <h3>This week</h3>
           ${weekEventsHtml}
@@ -1361,6 +1531,7 @@ function renderWeekly(){
     <div class="tt-scroll">
       <div class="tt-grid">${headRow}${rows}</div>
     </div>
+    ${renderTodoCard('week', toISO(monday), 'todo-card-wide')}
   `;
 }
 
@@ -1439,6 +1610,7 @@ function renderDaily(){
       <button class="icon-btn" id="day-next">${ICONS.chevR}</button>
       <button class="btn btn-sm" id="day-today">Today</button>
     </div>
+    ${renderTodoCard('day', iso, 'todo-card-daily')}
     ${body}
   `;
 }
