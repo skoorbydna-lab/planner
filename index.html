@@ -546,6 +546,27 @@ label.field-label{
 .todo-text:hover{border-color:var(--line-soft);}
 .todo-text:focus{border-color:var(--forest-light);background:var(--field);outline:none;}
 .todo-item.done .todo-text{text-decoration:line-through;color:var(--ink-faint);}
+.todo-due-wrap{position:relative;flex-shrink:0;display:inline-flex;align-items:center;border-radius:6px;}
+.todo-due-chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 6px;font-size:11.5px;color:var(--ink-faint);white-space:nowrap;}
+.todo-due-chip svg{width:14px;height:14px;}
+.todo-due-wrap:hover{background:var(--paper-dim);}
+.todo-due-wrap:hover .todo-due-chip{color:var(--ink-soft);}
+.todo-due-wrap.has-due{background:var(--paper-dim);}
+.todo-due-wrap.has-due .todo-due-chip{color:var(--ink-soft);padding-right:2px;}
+.todo-due-wrap.has-due.soon, .todo-due-wrap.has-due.today{background:var(--gold-wash);}
+.todo-due-wrap.has-due.soon .todo-due-chip, .todo-due-wrap.has-due.today .todo-due-chip, .todo-due-wrap.has-due.soon .todo-due-clear, .todo-due-wrap.has-due.today .todo-due-clear{color:var(--gold);}
+.todo-due-wrap.has-due.today .todo-due-chip{font-weight:600;}
+.todo-due-wrap.has-due.overdue{background:var(--brick-wash);}
+.todo-due-wrap.has-due.overdue .todo-due-chip, .todo-due-wrap.has-due.overdue .todo-due-clear{color:var(--brick);}
+.todo-due-wrap.has-due.overdue .todo-due-chip{font-weight:600;}
+.todo-due-wrap input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;}
+.todo-due-wrap input[type=date]::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;}
+.todo-due-clear{position:relative;z-index:1;width:20px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:0 6px 6px 0;color:var(--ink-faint);cursor:pointer;opacity:.75;}
+.todo-due-clear svg{width:9px;height:9px;}
+.todo-due-clear:hover{opacity:1;}
+.todo-item .todo-due-wrap.has-due + .todo-del{margin-left:2px;}
+.todo-add .todo-due-wrap{border:1px solid var(--line);background:var(--field);}
+.todo-add .todo-due-wrap .todo-due-chip{height:100%;min-height:32px;}
 .todo-del{flex-shrink:0;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:6px;color:var(--ink-faint);cursor:pointer;}
 .todo-del svg{width:13px;height:13px;}
 .todo-del:hover,.todo-del:focus-visible{background:var(--brick-wash);color:var(--brick);}
@@ -1457,11 +1478,34 @@ function todoTitle(scope, key){
   if(key===toISO(today)) return "Today's to-dos";
   return 'To-dos for '+fmtShort(fromISO(key));
 }
+// ---- Due dates ----
+function dueInfo(due){
+  if(!due) return null;
+  const today = toISO(new Date());
+  const d = fromISO(due);
+  const nice = d.toLocaleDateString('en-GB',{weekday:'short'})+' '+fmtShort(d);
+  if(due < today) return {cls:'overdue', text:'Overdue, '+nice};
+  if(due === today) return {cls:'today', text:'Due today'};
+  if(due === toISO(addDays(new Date(),1))) return {cls:'soon', text:'Due tomorrow'};
+  return {cls:'', text:'Due '+nice};
+}
+function dueChipHtml(due, inputClass, label){
+  const info = dueInfo(due);
+  return `<span class="todo-due-wrap ${info?'has-due '+info.cls:''}">
+    <span class="todo-due-chip" aria-hidden="true">${ICONS.calendar}${info? `<span>${info.text}</span>` : ''}</span>
+    <input type="date" class="${inputClass}" value="${due||''}" aria-label="${label}" title="${info? info.text : 'Add a due date'}">
+    ${info && inputClass==='todo-due'? `<button type="button" class="todo-due-clear" aria-label="Remove due date" title="Remove due date">${ICONS.close}</button>` : ''}
+  </span>`;
+}
+function sortByDue(list){
+  return list.slice().sort((a,b)=> (a.due||'9999') < (b.due||'9999') ? -1 : (a.due||'9999') > (b.due||'9999') ? 1 : 0);
+}
 function todoItemHtml(t, src, dayLabel){
   return `<li class="todo-item ${t.done?'done':''}" data-id="${t.id}" ${src? `data-scope="${src.scope}" data-key="${src.key}"` : ''}>
       ${dayLabel? `<span class="todo-day">${dayLabel}</span>` : ''}
       <input type="checkbox" class="todo-check" ${t.done?'checked':''} aria-label="Mark as ${t.done?'not done':'done'}">
       <input type="text" class="todo-text" value="${escapeHtml(t.text)}" aria-label="To-do">
+      ${t.done && !t.due ? '' : dueChipHtml(t.done ? null : t.due, 'todo-due', 'Due date')}
       <button type="button" class="todo-del" aria-label="Delete to-do" title="Delete">${ICONS.close}</button>
     </li>`;
 }
@@ -1479,7 +1523,7 @@ function renderTodoCard(scope, key, extraClass){
   const list = todoList(scope, key);
   const open = list.filter(t=>!t.done);
   const done = list.filter(t=>t.done);
-  const items = open.concat(done).map(t=>todoItemHtml(t)).join('');
+  const items = sortByDue(open).concat(done).map(t=>todoItemHtml(t)).join('');
   const fromDays = scope==='week' ? dailyTodosForWeek(key) : [];
   const dayItems = fromDays.map(x=>todoItemHtml(x.t, {scope:'day', key:x.iso}, x.dow)).join('');
   const total = list.length + fromDays.length;
@@ -1497,6 +1541,7 @@ function renderTodoCard(scope, key, extraClass){
     ${fromDays.length? `<div class="todo-sub">From your daily lists</div><ul class="todo-list">${dayItems}</ul>` : ''}
     <div class="todo-add">
       <input type="text" class="input todo-new" placeholder="${scope==='week'?'Add something to do this week':'Add something to do'}" aria-label="New to-do">
+      ${dueChipHtml(state.todoDraftDue && state.todoDraftDue[scope+key] || null, 'todo-new-due', 'Due date for new to-do')}
       <button type="button" class="btn btn-sm" data-todo-act="add">Add</button>
     </div>
     ${actions.length? `<div class="todo-actions">${actions.join('')}</div>` : ''}
@@ -1523,7 +1568,9 @@ function todoAdd(card){
   if(!text){ input.focus(); return; }
   const {scope, key} = card.dataset;
   const list = todoList(scope, key).slice();
-  list.push({id:uid(), text, done:false});
+  const due = (state.todoDraftDue && state.todoDraftDue[scope+key]) || null;
+  list.push(due ? {id:uid(), text, done:false, due} : {id:uid(), text, done:false});
+  if(state.todoDraftDue) delete state.todoDraftDue[scope+key];
   saveTodoList(scope, key, list);
   refreshTodoCards({scope, key});
 }
@@ -1564,6 +1611,15 @@ document.addEventListener('click', e=>{
     }
     return;
   }
+  const clr = e.target.closest('.todo-due-clear');
+  if(clr){
+    const it = clr.closest('.todo-item');
+    todoUpdate(card, it.dataset.id, t=>{ delete t.due; }, it);
+    refreshTodoCards();
+    return;
+  }
+  const dueInput = e.target.closest('.todo-due, .todo-new-due');
+  if(dueInput){ try{ dueInput.showPicker(); }catch(_){} return; }
   const del = e.target.closest('.todo-del');
   if(del){
     const it = del.closest('.todo-item');
@@ -1574,7 +1630,21 @@ document.addEventListener('click', e=>{
 document.addEventListener('change', e=>{
   const card = e.target.closest('.todo-card');
   if(!card) return;
+  if(e.target.classList.contains('todo-new-due')){
+    state.todoDraftDue = state.todoDraftDue || {};
+    state.todoDraftDue[card.dataset.scope+card.dataset.key] = e.target.value || null;
+    const typed = card.querySelector('.todo-new').value;
+    refreshTodoCards({scope:card.dataset.scope, key:card.dataset.key});
+    const fresh = document.querySelector(`.todo-card[data-scope="${card.dataset.scope}"][data-key="${card.dataset.key}"] .todo-new`);
+    if(fresh) fresh.value = typed;
+    return;
+  }
   const item = e.target.closest('.todo-item');
+  if(item && e.target.classList.contains('todo-due')){
+    todoUpdate(card, item.dataset.id, t=>{ if(e.target.value) t.due = e.target.value; else delete t.due; }, item);
+    refreshTodoCards();
+    return;
+  }
   if(!item) return;
   if(e.target.classList.contains('todo-check')){
     todoUpdate(card, item.dataset.id, t=>{ t.done = e.target.checked; }, item);
