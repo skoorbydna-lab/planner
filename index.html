@@ -46,6 +46,13 @@
   --sidebar-active:#31513B;
   --shadow:0 1px 2px rgba(35,44,51,0.06), 0 4px 14px rgba(35,44,51,0.06);
   --radius:10px;
+  --field:#fff;            /* input backgrounds */
+  --fixed-row:#F1ECDF;     /* break/lunch rows in the timetable */
+  --on-accent:#fff;        /* text on accent-coloured buttons */
+  --inverse-bg:var(--ink); /* active class tab, toast */
+  --inverse-ink:#fff;
+  --chip-line:#E4D3A4;
+  --chip-holiday-line:#DDBBB2;
   --font-display:'Fraunces', Georgia, serif;
   --font-body:'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -225,7 +232,7 @@ body.nav-hidden .main{ margin-left:0; }
 .btn-primary{
   background:var(--forest);
   border-color:var(--forest);
-  color:#fff;
+  color:var(--on-accent);
 }
 .btn-primary:hover{background:var(--forest-light);border-color:var(--forest-light);}
 .btn-ghost{background:transparent;border-color:transparent;}
@@ -247,7 +254,7 @@ textarea, .input{
   padding:9px 11px;
   font-size:14px;
   color:var(--ink);
-  background:#fff;
+  background:var(--field);
   resize:vertical;
   line-height:1.5;
 }
@@ -396,6 +403,110 @@ label.field-label{
 .retirement-stat .lbl{display:block;font-size:10.5px;color:#D7E0D8;margin-top:3px;text-transform:uppercase;letter-spacing:.03em;}
 .retirement-card .empty-note{color:#C3CFC4;}
 
+/* ============================= THEMES ============================= */
+:root[data-theme="ocean"]{
+  --paper:#EEF2F4;--paper-dim:#E0E7EB;--paper-card:#FBFCFD;--line:#C9D4DB;--line-soft:#DCE4E9;
+  --ink:#1F2B35;--ink-soft:#52626F;--ink-faint:#83919C;
+  --forest:#2D5F7F;--forest-light:#3F7698;--forest-wash:#DFEAF1;--gold-wash:#E6EEF3;
+  --sidebar-bg:#18242E;--sidebar-active:#2D5F7F;--fixed-row:#E6ECEF;--chip-line:#C3D3DD;
+}
+:root[data-theme="heather"]{
+  --paper:#F4EFF1;--paper-dim:#EAE1E5;--paper-card:#FDFBFC;--line:#D9CBD1;--line-soft:#E7DDE1;
+  --ink:#2E2530;--ink-soft:#655A66;--ink-faint:#958A95;
+  --forest:#6B4468;--forest-light:#82587F;--forest-wash:#EEE3EC;--gold-wash:#F2E9EE;
+  --sidebar-bg:#271E27;--sidebar-active:#6B4468;--fixed-row:#EDE5E8;--chip-line:#DCC8D3;
+}
+:root[data-theme="clean"]{
+  --paper:#F4F5F6;--paper-dim:#E9EBED;--paper-card:#FFFFFF;--line:#D3D7DB;--line-soft:#E4E7EA;
+  --ink:#1E2328;--ink-soft:#575F67;--ink-faint:#8A9198;
+  --forest:#1F6E68;--forest-light:#2A857E;--forest-wash:#DDEEEC;--gold-wash:#EEF1F2;
+  --sidebar-bg:#FFFFFF;--sidebar-ink:#3B434A;--sidebar-active:#1F6E68;--fixed-row:#EEF0F2;--chip-line:#D3DCDF;
+}
+:root[data-theme="clean"] .sidebar{border-right:1px solid var(--line-soft);}
+:root[data-theme="clean"] .sidebar-brand{color:var(--ink);}
+:root[data-theme="clean"] .sidebar-sub, :root[data-theme="clean"] .sidebar-foot{color:var(--ink-faint);}
+:root[data-theme="clean"] .nav-item:hover{background:var(--paper-dim);}
+@media (max-width:860px){:root[data-theme="clean"] .sidebar{border-right:none;border-bottom:1px solid var(--line-soft);}}
+:root[data-theme="night"]{
+  color-scheme:dark;
+  --paper:#171C20;--paper-dim:#21282D;--paper-card:#1D2328;--line:#343D44;--line-soft:#2A3238;
+  --ink:#E4E7E2;--ink-soft:#A8B0B6;--ink-faint:#79838A;
+  --forest:#4F8462;--forest-light:#6AA07D;--forest-wash:#22332A;
+  --gold:#D3B26A;--gold-wash:#352E1E;--brick:#DB8C7E;--brick-wash:#3A2522;
+  --slate:#94AECB;--slate-wash:#232D38;--teal:#7CC2BD;--teal-wash:#1E3332;
+  --navy:#8FAED0;--navy-wash:#212C39;--plum:#C79BC3;--plum-wash:#33243A;
+  --rust:#E19A6E;--rust-wash:#3A2A1F;--olive:#C2BE78;--olive-wash:#2F2E1E;
+  --clay:#DC9A81;--clay-wash:#382821;--berry:#D092AB;--berry-wash:#36222C;
+  --sidebar-bg:#101417;--sidebar-active:#4F8462;
+  --field:#161B1F;--fixed-row:#1A2025;--inverse-bg:#E4E7E2;--inverse-ink:#171C20;
+  --chip-line:#4A4130;--chip-holiday-line:#5A3A35;
+  --shadow:0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
+}
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.theme-opt{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--paper-card);cursor:pointer;text-align:left;font:inherit;color:var(--ink);}
+.theme-opt:hover{border-color:var(--ink-faint);}
+.theme-opt[aria-pressed="true"]{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest-wash);}
+.theme-swatch{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid rgba(0,0,0,0.08);}
+.theme-swatch span{flex:1;}
+.theme-swatch span:first-child{flex:0 0 30%;}
+.theme-name{font-size:13px;font-weight:600;}
+
+/* ============================= CLASSES ============================= */
+.cls-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--paper-card);}
+.seg button{border:none;background:transparent;padding:6px 12px;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer;}
+.seg button + button{border-left:1px solid var(--line);}
+.seg button[aria-pressed="true"]{background:var(--forest);color:var(--on-accent);}
+.cls-summary{font-size:13px;color:var(--ink-soft);}
+.cls-group{margin-bottom:22px;}
+.cls-group h2{font-family:var(--font-display);font-weight:500;font-size:18px;margin:0 0 10px;}
+.cls-week{font-size:12px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
+.cls-lesson{display:flex;gap:14px;padding:12px 14px;border:1px solid var(--line-soft);border-left-width:4px;border-radius:8px;background:var(--paper-card);margin-bottom:8px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--ink);}
+.cls-lesson:hover{border-color:var(--ink-faint);}
+.cls-lesson.is-today{box-shadow:0 0 0 2px var(--gold-wash);}
+.cls-when{width:112px;flex-shrink:0;font-size:12px;color:var(--ink-soft);line-height:1.45;}
+.cls-when strong{display:block;font-size:13.5px;color:var(--ink);}
+.cls-body{flex:1;min-width:0;}
+.cls-title{font-weight:600;font-size:14px;margin-bottom:2px;}
+.cls-title.empty{font-weight:400;font-style:italic;color:var(--ink-faint);}
+.cls-notes{font-size:12.5px;color:var(--ink-soft);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.cls-hw{font-size:12px;color:var(--forest);margin-top:4px;}
+@media (max-width:600px){.cls-lesson{flex-direction:column;gap:6px;}.cls-when{width:auto;}}
+
+/* ============================= HOMEWORK TIMETABLE ============================= */
+.tt-grid.hw-grid{grid-template-columns:150px repeat(5, minmax(130px,1fr));}
+@media (max-width:860px){.tt-grid.hw-grid{grid-template-columns:110px repeat(5, minmax(140px,1fr));min-width:810px;}}
+.hw-cell{font-size:12.5px;line-height:1.4;white-space:pre-line;}
+.hw-cell.empty{color:var(--ink-faint);}
+.hw-class-cell{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink);background:var(--paper-dim);}
+.hw-slot{display:flex;flex-direction:column;gap:5px;}
+.hw-slot.hw-done{background:var(--forest-wash);}
+.hw-slot-label{font-size:11.5px;font-weight:600;color:var(--ink-soft);}
+.hw-slot textarea.hw-content{min-height:48px;font-size:12.5px;padding:5px 7px;line-height:1.4;}
+.hw-tick{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);cursor:pointer;}
+.hw-tick input{width:15px;height:15px;margin:0;accent-color:var(--forest);cursor:pointer;}
+.hw-off{background:var(--fixed-row);}
+.hw-summary{font-size:13px;color:var(--ink-soft);margin:-6px 0 12px;}
+.hw-edit textarea{width:100%;min-height:52px;font-size:12.5px;padding:6px 7px;resize:vertical;}
+
+/* ============================= ACTIVITIES ============================= */
+.act-chip{display:block;font-size:12px;line-height:1.35;padding:5px 8px;border-radius:6px;border-left:3px solid;}
+.act-chip strong{font-weight:700;}
+.act-chip.compact{font-size:11px;padding:3px 6px;}
+.act-duty{background:var(--brick-wash);border-color:var(--brick);color:var(--brick);}
+.act-commute{background:var(--navy-wash);border-color:var(--navy);color:var(--navy);}
+.act-club{background:var(--teal-wash);border-color:var(--teal);color:var(--teal);}
+.act-meeting{background:var(--gold-wash);border-color:var(--gold);color:var(--gold);}
+.act-other{background:var(--plum-wash);border-color:var(--plum);color:var(--plum);}
+.act-editor{display:flex;flex-direction:column;gap:4px;}
+.act-editor .input{padding:4px 6px;font-size:11.5px;}
+.tt-fixed-cell{background:var(--fixed-row);min-height:30px;padding:5px 6px;}
+.period-fixed .act-chip, .daily-fixed .act-chip{margin-top:4px;}
+.period-fixed-main{flex:1;min-width:0;}
+.after-acts{margin-bottom:6px;}
+.todo-sub{font-size:11.5px;font-weight:600;color:var(--ink-faint);margin:6px 0 2px;}
+.todo-day{font-size:11px;font-weight:600;color:var(--ink-faint);flex-shrink:0;width:30px;}
+
 /* ============================= TO-DO LISTS ============================= */
 .todo-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;}
 .todo-head h3{font-family:var(--font-display);font-weight:500;font-size:16px;margin:0;}
@@ -406,7 +517,7 @@ label.field-label{
 .todo-check{width:17px;height:17px;flex-shrink:0;accent-color:var(--forest);cursor:pointer;margin:0;}
 .todo-text{flex:1;min-width:0;border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;font:inherit;font-size:13.5px;color:var(--ink);}
 .todo-text:hover{border-color:var(--line-soft);}
-.todo-text:focus{border-color:var(--forest-light);background:#fff;outline:none;}
+.todo-text:focus{border-color:var(--forest-light);background:var(--field);outline:none;}
 .todo-item.done .todo-text{text-decoration:line-through;color:var(--ink-faint);}
 .todo-del{flex-shrink:0;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:6px;color:var(--ink-faint);cursor:pointer;}
 .todo-del svg{width:13px;height:13px;}
@@ -455,7 +566,7 @@ label.field-label{
   display:flex;flex-direction:column;justify-content:center;
 }
 .tt-time-cell strong{font-size:12px;color:var(--ink);}
-.tt-fixed-row .tt-cell{min-height:26px;background:#F1ECDF;color:var(--ink-faint);font-size:11px;display:flex;align-items:center;}
+.tt-fixed-row .tt-cell{min-height:26px;background:var(--fixed-row);color:var(--ink-faint);font-size:11px;display:flex;align-items:center;}
 .tt-lesson-cell{
   cursor:pointer;
   display:flex;flex-direction:column;gap:2px;
@@ -468,14 +579,14 @@ label.field-label{
 .tt-lesson-cell.today-col{background:var(--gold-wash);}
 .agenda-chip{
   background:var(--gold-wash);
-  border:1px solid #E4D3A4;
+  border:1px solid var(--chip-line);
   border-radius:7px;
   padding:6px 8px;
   margin-bottom:6px;
 }
 .agenda-chip .agenda-title{font-size:10.5px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px;}
 .agenda-chip ul{margin:0;padding-left:14px;font-size:11px;line-height:1.55;color:var(--ink-soft);}
-.agenda-chip.agenda-holiday{background:var(--brick-wash);border-color:#DDBBB2;}
+.agenda-chip.agenda-holiday{background:var(--brick-wash);border-color:var(--chip-holiday-line);}
 .agenda-chip.agenda-holiday .agenda-title{color:var(--brick);}
 .daily-agenda .agenda-title{font-size:11.5px;}
 .daily-agenda ul{font-size:12.5px;}
@@ -550,7 +661,7 @@ label.field-label{
   padding:7px 13px;border-radius:20px;border:1px solid var(--line);
   background:var(--paper-card);font-size:13px;font-weight:500;cursor:pointer;
 }
-.class-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.class-tab.active{background:var(--inverse-bg);color:var(--inverse-ink);border-color:var(--inverse-bg);}
 .plan-half{margin-bottom:16px;}
 .plan-half .field-label{margin-bottom:6px;}
 
@@ -562,7 +673,7 @@ label.field-label{
 
 .toast{
   position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
-  background:var(--ink);color:#fff;padding:9px 18px;border-radius:20px;
+  background:var(--inverse-bg);color:var(--inverse-ink);padding:9px 18px;border-radius:20px;
   font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,0.25);z-index:200;
   opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
 }
@@ -776,6 +887,10 @@ function defaultStore(){
     dailyOverrides: {},    // "YYYY-MM-DD_periodKey" -> {class, room} (one-off, e.g. cover or a single room change)
     customEvents: {},      // "YYYY-MM-DD" -> array of manually-added calendar/meeting notes for that date
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
+    homework: {A:{}, B:{}},   // weekType -> classCode -> day -> text (the homework timetable template)
+    homeworkWork: {},         // "YYYY-MM-DD_classCode" -> {content, created, smhw} for a real date
+    activities: {A:{}, B:{}},  // weekType -> day -> 'break'|'lunch'|'after' -> {type, text}: duties, commutes, clubs…
+    theme: 'classic',         // colour theme key, see THEMES
     todos: {week:{}, day:{}}, // week: Monday "YYYY-MM-DD" -> [{id,text,done}], day: "YYYY-MM-DD" -> [{id,text,done}]
     weekAnchor: WEEK_ANCHOR,
     weekAnchorType: WEEK_ANCHOR_TYPE,
@@ -796,6 +911,14 @@ function normalizeStore(obj){
   if(!st.todos || typeof st.todos!=='object') st.todos = {};
   if(!st.todos.week) st.todos.week = {};
   if(!st.todos.day) st.todos.day = {};
+  if(!st.homework || typeof st.homework!=='object') st.homework = {};
+  if(!st.homework.A) st.homework.A = {};
+  if(!st.homework.B) st.homework.B = {};
+  if(!st.homeworkWork || typeof st.homeworkWork!=='object') st.homeworkWork = {};
+  if(!st.activities || typeof st.activities!=='object') st.activities = {};
+  if(!st.activities.A) st.activities.A = {};
+  if(!st.activities.B) st.activities.B = {};
+  if(!st.theme) st.theme = 'classic';
   return st;
 }
 function needsSetup(){ return !store.profile || !store.profile.setupDone; }
@@ -1088,6 +1211,8 @@ function debounce(fn, ms){
    ICONS (inline svg, stroke-based, minimal)
    ====================================================================== */
 const ICONS = {
+  classes:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.5 14.2c2.9-.3 5 1.6 5 4.8"/></svg>`,
+  homework:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3.5h6v1"/><line x1="8.5" y1="10" x2="15.5" y2="10"/><line x1="8.5" y1="13.5" x2="15.5" y2="13.5"/><line x1="8.5" y1="17" x2="12.5" y2="17"/></svg>`,
   dashboard:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="4.5" rx="1.2"/><rect x="13.5" y="10.5" width="7" height="10" rx="1.2"/><rect x="3.5" y="13" width="7" height="7.5" rx="1.2"/></svg>`,
   grid:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="17" height="16" rx="1.5"/><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"/><line x1="8.5" y1="4" x2="8.5" y2="20"/><line x1="13.7" y1="4" x2="13.7" y2="20"/></svg>`,
   day:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="1.5"/><line x1="4" y1="9.5" x2="20" y2="9.5"/><line x1="8" y1="3" x2="8" y2="6.5"/><line x1="16" y1="3" x2="16" y2="6.5"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="16.3" x2="13" y2="16.3"/></svg>`,
@@ -1107,6 +1232,8 @@ const NAV = [
   {key:'weekly',    label:'Weekly Timetable', icon:'grid'},
   {key:'daily',     label:'Daily View', icon:'day'},
   {key:'calendar',  label:'Termly Calendar', icon:'calendar'},
+  {key:'classes',   label:'Classes', icon:'classes'},
+  {key:'homework',  label:'Homework Timetable', icon:'homework'},
   {key:'plans',     label:'Long-Term Plans', icon:'book'},
   {key:'settings',  label:'Settings', icon:'settings'}
 ];
@@ -1140,6 +1267,7 @@ function renderSidebar(){
 }
 
 function applyBranding(){
+  applyTheme();
   const name = (store.profile && store.profile.name || '').trim();
   document.getElementById('brand').textContent = name || 'Weekly Planner';
   document.title = name ? name+' — Weekly Planner' : 'Weekly Lesson Planner';
@@ -1155,10 +1283,54 @@ function render(){
   else if(state.route==='weekly') main.innerHTML = renderWeekly();
   else if(state.route==='daily') main.innerHTML = renderDaily();
   else if(state.route==='calendar') main.innerHTML = renderCalendar();
+  else if(state.route==='classes') main.innerHTML = renderClasses();
+  else if(state.route==='homework') main.innerHTML = renderHomework();
   else if(state.route==='plans') main.innerHTML = renderPlans();
   else if(state.route==='settings') main.innerHTML = renderSettings();
   attachRouteHandlers();
   if(state.route==='setup') attachSetupHandlers();
+}
+
+/* ======================================================================
+   BREAK / LUNCH / AFTER-SCHOOL ACTIVITIES (duties, commutes, clubs…)
+   Set once on the A/B timetable, then shown automatically every week.
+   ====================================================================== */
+const ACTIVITY_TYPES = [
+  {key:'duty',    label:'Duty'},
+  {key:'commute', label:'Commute'},
+  {key:'club',    label:'Club'},
+  {key:'meeting', label:'Meeting'},
+  {key:'other',   label:'Other'}
+];
+const ACTIVITY_SLOTS = ['break','lunch','after'];
+function getTemplateActivity(w, day, slot){
+  return (store.activities[w] && store.activities[w][day] && store.activities[w][day][slot]) || null;
+}
+function setTemplateActivity(w, day, slot, type, text){
+  if(!store.activities[w][day]) store.activities[w][day] = {};
+  if(type) store.activities[w][day][slot] = {type, text};
+  else delete store.activities[w][day][slot];
+  if(!Object.keys(store.activities[w][day]).length) delete store.activities[w][day];
+}
+function activityFor(dateISO, slot){
+  const date = fromISO(dateISO), d = dayKeyOf(date);
+  if(!d || !isTeachingDay(dateISO)) return null;
+  return getTemplateActivity(weekTypeFor(date), d, slot);
+}
+function activityChip(act, compact){
+  if(!act) return '';
+  const t = ACTIVITY_TYPES.find(x=>x.key===act.type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length-1];
+  return `<span class="act-chip act-${t.key} ${compact?'compact':''}"><strong>${t.label}</strong>${act.text? ' '+escapeHtml(act.text):''}</span>`;
+}
+function activityEditor(w, day, slot){
+  const act = getTemplateActivity(w, day, slot) || {type:'', text:''};
+  return `<div class="act-editor" data-act-day="${day}" data-act-slot="${slot}">
+    <select class="input act-type" aria-label="Type">
+      <option value="">Nothing</option>
+      ${ACTIVITY_TYPES.map(t=>`<option value="${t.key}" ${act.type===t.key?'selected':''}>${t.label}</option>`).join('')}
+    </select>
+    <input type="text" class="input act-text" placeholder="Details, e.g. canteen" value="${escapeHtml(act.text||'')}" aria-label="Details">
+  </div>`;
 }
 
 /* ======================================================================
@@ -1186,16 +1358,33 @@ function todoTitle(scope, key){
   if(key===toISO(today)) return "Today's to-dos";
   return 'To-dos for '+fmtShort(fromISO(key));
 }
+function todoItemHtml(t, src, dayLabel){
+  return `<li class="todo-item ${t.done?'done':''}" data-id="${t.id}" ${src? `data-scope="${src.scope}" data-key="${src.key}"` : ''}>
+      ${dayLabel? `<span class="todo-day">${dayLabel}</span>` : ''}
+      <input type="checkbox" class="todo-check" ${t.done?'checked':''} aria-label="Mark as ${t.done?'not done':'done'}">
+      <input type="text" class="todo-text" value="${escapeHtml(t.text)}" aria-label="To-do">
+      <button type="button" class="todo-del" aria-label="Delete to-do" title="Delete">${ICONS.close}</button>
+    </li>`;
+}
+// Every daily to-do in the week starting on mondayISO, in day order.
+function dailyTodosForWeek(mondayISO){
+  const out = [];
+  for(let i=0;i<7;i++){
+    const iso = toISO(addDays(fromISO(mondayISO), i));
+    const dow = fromISO(iso).toLocaleDateString('en-GB',{weekday:'short'});
+    todoList('day', iso).forEach(t=>out.push({t, iso, dow}));
+  }
+  return out;
+}
 function renderTodoCard(scope, key, extraClass){
   const list = todoList(scope, key);
   const open = list.filter(t=>!t.done);
   const done = list.filter(t=>t.done);
-  const items = open.concat(done).map(t=>`
-    <li class="todo-item ${t.done?'done':''}" data-id="${t.id}">
-      <input type="checkbox" class="todo-check" ${t.done?'checked':''} aria-label="Mark as ${t.done?'not done':'done'}">
-      <input type="text" class="todo-text" value="${escapeHtml(t.text)}" aria-label="To-do">
-      <button type="button" class="todo-del" aria-label="Delete to-do" title="Delete">${ICONS.close}</button>
-    </li>`).join('');
+  const items = open.concat(done).map(t=>todoItemHtml(t)).join('');
+  const fromDays = scope==='week' ? dailyTodosForWeek(key) : [];
+  const dayItems = fromDays.map(x=>todoItemHtml(x.t, {scope:'day', key:x.iso}, x.dow)).join('');
+  const total = list.length + fromDays.length;
+  const totalDone = done.length + fromDays.filter(x=>x.t.done).length;
   const moveLabel = scope==='week' ? 'Move unfinished to next week' : 'Move unfinished to next school day';
   const actions = [];
   if(open.length && list.length) actions.push(`<button type="button" data-todo-act="move">${moveLabel}</button>`);
@@ -1203,9 +1392,10 @@ function renderTodoCard(scope, key, extraClass){
   return `<div class="card ${extraClass||'side-card'} todo-card" data-scope="${scope}" data-key="${key}">
     <div class="todo-head">
       <h3>${todoTitle(scope, key)}</h3>
-      ${list.length? `<span class="todo-count">${done.length} of ${list.length} done</span>` : ''}
+      ${total? `<span class="todo-count">${totalDone} of ${total} done</span>` : ''}
     </div>
     ${list.length? `<ul class="todo-list">${items}</ul>` : ''}
+    ${fromDays.length? `<div class="todo-sub">From your daily lists</div><ul class="todo-list">${dayItems}</ul>` : ''}
     <div class="todo-add">
       <input type="text" class="input todo-new" placeholder="${scope==='week'?'Add something to do this week':'Add something to do'}" aria-label="New to-do">
       <button type="button" class="btn btn-sm" data-todo-act="add">Add</button>
@@ -1238,8 +1428,9 @@ function todoAdd(card){
   saveTodoList(scope, key, list);
   refreshTodoCards({scope, key});
 }
-function todoUpdate(card, id, fn){
-  const {scope, key} = card.dataset;
+function todoUpdate(card, id, fn, item){
+  const src = item && item.dataset.scope ? item.dataset : card.dataset;
+  const {scope, key} = src;
   const list = todoList(scope, key).map(t=>({...t}));
   const i = list.findIndex(t=>t.id===id);
   if(i<0) return;
@@ -1276,7 +1467,8 @@ document.addEventListener('click', e=>{
   }
   const del = e.target.closest('.todo-del');
   if(del){
-    todoUpdate(card, del.closest('.todo-item').dataset.id, ()=>false);
+    const it = del.closest('.todo-item');
+    todoUpdate(card, it.dataset.id, ()=>false, it);
     refreshTodoCards();
   }
 });
@@ -1286,12 +1478,13 @@ document.addEventListener('change', e=>{
   const item = e.target.closest('.todo-item');
   if(!item) return;
   if(e.target.classList.contains('todo-check')){
-    todoUpdate(card, item.dataset.id, t=>{ t.done = e.target.checked; });
+    todoUpdate(card, item.dataset.id, t=>{ t.done = e.target.checked; }, item);
     refreshTodoCards();
   }else if(e.target.classList.contains('todo-text')){
     const text = e.target.value.trim();
-    todoUpdate(card, item.dataset.id, t=>{ if(!text) return false; t.text = text; });
+    todoUpdate(card, item.dataset.id, t=>{ if(!text) return false; t.text = text; }, item);
     if(!text) refreshTodoCards();
+    else document.querySelectorAll(`.todo-item[data-id="${item.dataset.id}"] .todo-text`).forEach(el=>{ if(el!==e.target) el.value = text; });
   }
 });
 document.addEventListener('keydown', e=>{
@@ -1301,6 +1494,242 @@ document.addEventListener('keydown', e=>{
   if(e.target.classList.contains('todo-new')){ e.preventDefault(); todoAdd(card); }
   else if(e.target.classList.contains('todo-text')){ e.preventDefault(); e.target.blur(); }
 });
+
+/* ======================================================================
+   COLOUR THEMES
+   ====================================================================== */
+const THEMES = [
+  {key:'classic', name:'Classic',  swatch:['#20272C','#F5F1E7','#31513B']},
+  {key:'ocean',   name:'Ocean',    swatch:['#18242E','#EEF2F4','#2D5F7F']},
+  {key:'heather', name:'Heather',  swatch:['#271E27','#F4EFF1','#6B4468']},
+  {key:'clean',   name:'Clean',    swatch:['#FFFFFF','#F4F5F6','#1F6E68']},
+  {key:'night',   name:'Night',    swatch:['#101417','#1D2328','#4F8462']}
+];
+function applyTheme(){
+  const key = THEMES.some(t=>t.key===store.theme) ? store.theme : 'classic';
+  if(key==='classic') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', key);
+}
+function renderThemePicker(){
+  const current = store.theme || 'classic';
+  return `<div class="theme-grid">${THEMES.map(t=>`
+    <button type="button" class="theme-opt" data-theme-key="${t.key}" aria-pressed="${t.key===current}">
+      <span class="theme-swatch">${t.swatch.map(c=>`<span style="background:${c}"></span>`).join('')}</span>
+      <span class="theme-name">${t.name}</span>
+    </button>`).join('')}</div>`;
+}
+
+/* ======================================================================
+   CLASSES — every lesson for one class across the school year
+   ====================================================================== */
+function sortedClassCodes(){
+  return allClassCodes().sort((a,b)=> classInfo(a).label.localeCompare(classInfo(b).label));
+}
+function lessonsForClass(code){
+  const out = [];
+  let half = 0, seenTeaching = false;
+  TERM_CALENDAR.forEach(wk=>{
+    if(wk.holiday){ if(seenTeaching){ half++; seenTeaching = false; } return; }
+    const monday = fromISO(wk.wb);
+    for(let i=0;i<5;i++){
+      const iso = toISO(addDays(monday,i));
+      if(!isTeachingDay(iso)) continue;
+      seenTeaching = true;
+      computeDayRows(iso).forEach(row=>{
+        if(row.type!=='single' && row.type!=='double') return;
+        if(!row.slot || row.slot.class!==code) return;
+        const periodKey = row.type==='double' ? row.periodA.key : row.period.key;
+        out.push({
+          iso, wb:wk.wb, weekType:wk.type, half:HALF_TERMS[Math.min(half, HALF_TERMS.length-1)],
+          periodKey, label: row.type==='double' ? row.label : row.period.label,
+          time: row.type==='double' ? row.time : row.period.time,
+          room: row.slot.room, lesson: getLesson(iso, periodKey)
+        });
+      });
+    }
+  });
+  return out;
+}
+function renderClasses(){
+  const codes = sortedClassCodes();
+  if(!codes.length) return `<div class="page-head"><h1 class="page-title">Classes</h1></div><p class="empty-note">Add your classes in Settings → Open setup to see them here.</p>`;
+  if(!state.classesCode || !codes.includes(state.classesCode)) state.classesCode = codes[0];
+  if(!state.classesFilter) state.classesFilter = 'upcoming';
+  const code = state.classesCode, info = classInfo(code), filter = state.classesFilter;
+  const todayISO = toISO(new Date());
+  const all = lessonsForClass(code);
+  const shown = filter==='upcoming' ? all.filter(l=>l.iso>=todayISO)
+              : filter==='past' ? all.filter(l=>l.iso<todayISO).reverse()
+              : all;
+  const planned = shown.filter(l=>l.lesson.title || l.lesson.notes).length;
+
+  let body = '';
+  if(!shown.length){
+    body = `<p class="empty-note">${filter==='upcoming' ? 'No more timetabled lessons for this class this year.' : filter==='past' ? 'No lessons with this class yet this year.' : 'This class has no timetabled lessons this year.'}</p>`;
+  }else{
+    let lastHalf = null, lastWeek = null, open = false;
+    shown.forEach(l=>{
+      if(l.half!==lastHalf){
+        if(open) body += `</div>`;
+        body += `<div class="cls-group"><h2>${l.half}</h2>`;
+        open = true; lastHalf = l.half; lastWeek = null;
+      }
+      if(l.wb!==lastWeek){
+        body += `<div class="cls-week">Week beginning ${fmtShort(fromISO(l.wb))}${l.weekType? ' (Week '+l.weekType+')':''}</div>`;
+        lastWeek = l.wb;
+      }
+      const d = fromISO(l.iso);
+      const dow = d.toLocaleDateString('en-GB',{weekday:'short'});
+      body += `<button type="button" class="cls-lesson ${l.iso===todayISO?'is-today':''}" style="border-left-color:var(--${info.color})" data-date="${l.iso}" data-period="${l.periodKey}">
+        <span class="cls-when"><strong>${dow} ${fmtShort(d)}</strong>${l.label}<br>${l.time}${l.room? ', '+escapeHtml(l.room):''}</span>
+        <span class="cls-body">
+          <span class="cls-title ${l.lesson.title?'':'empty'}" style="display:block;">${l.lesson.title? escapeHtml(l.lesson.title) : 'No plan yet'}</span>
+          ${l.lesson.notes? `<span class="cls-notes" style="display:-webkit-box;">${escapeHtml(l.lesson.notes)}</span>`:''}
+          ${l.lesson.homework? `<span class="cls-hw" style="display:block;">Homework: ${escapeHtml(l.lesson.homework)}</span>`:''}
+        </span>
+      </button>`;
+    });
+    if(open) body += `</div>`;
+  }
+
+  return `
+    <div class="page-head">
+      <p class="page-eyebrow">Classes</p>
+      <h1 class="page-title">${escapeHtml(info.label)}</h1>
+    </div>
+    <div class="class-tabs">
+      ${codes.map(c=>`<button class="class-tab ${c===code?'active':''}" data-class="${escapeHtml(c)}"><span class="cc-dot cc-${classInfo(c).color}"></span> ${escapeHtml(classInfo(c).label)}</button>`).join('')}
+    </div>
+    <div class="cls-toolbar">
+      <div class="seg" role="group" aria-label="Which lessons to show">
+        ${[['upcoming','Upcoming'],['past','Past'],['all','Whole year']].map(([k,l])=>`<button type="button" data-cls-filter="${k}" aria-pressed="${k===filter}">${l}</button>`).join('')}
+      </div>
+      ${shown.length? `<span class="cls-summary">${shown.length} lesson${shown.length===1?'':'s'}, ${planned} planned</span>` : ''}
+    </div>
+    ${body}
+  `;
+}
+
+/* ======================================================================
+   HOMEWORK TIMETABLE — classes down the side, days across, A/B weeks
+   ====================================================================== */
+function getHomework(w, code, day){
+  return (store.homework[w] && store.homework[w][code] && store.homework[w][code][day]) || '';
+}
+function setHomework(w, code, day, text){
+  if(!store.homework[w][code]) store.homework[w][code] = {};
+  if(text) store.homework[w][code][day] = text;
+  else delete store.homework[w][code][day];
+  if(!Object.keys(store.homework[w][code]).length) delete store.homework[w][code];
+}
+function hwWorkKey(iso, code){ return iso+'_'+code; }
+function getHwWork(iso, code){
+  return store.homeworkWork[hwWorkKey(iso, code)] || {content:'', created:false, smhw:false};
+}
+function setHwWork(iso, code, patch){
+  const k = hwWorkKey(iso, code);
+  const next = Object.assign({}, getHwWork(iso, code), patch);
+  if(!next.content && !next.created && !next.smhw) delete store.homeworkWork[k];
+  else store.homeworkWork[k] = next;
+}
+// The slots shown for a real week: every template entry for that week's A/B type, on teaching days.
+function hwSlotsForWeek(monday){
+  const w = weekTypeFor(monday), out = [];
+  sortedClassCodes().forEach(code=>DAYS.forEach((d,i)=>{
+    const iso = toISO(addDays(monday,i));
+    if(isTeachingDay(iso) && getHomework(w, code, d)) out.push({iso, code});
+  }));
+  return out;
+}
+function hwSummaryText(monday){
+  const slots = hwSlotsForWeek(monday);
+  if(!slots.length) return '';
+  const created = slots.filter(x=>getHwWork(x.iso,x.code).created).length;
+  const smhw = slots.filter(x=>getHwWork(x.iso,x.code).smhw).length;
+  return `${slots.length} homework${slots.length===1?'':'s'} this week: ${created} created, ${smhw} on SMHW`;
+}
+function renderHomework(){
+  const editing = !!state.editingHomework;
+  const codes = sortedClassCodes();
+  if(!state.hwMonday) state.hwMonday = getMonday(new Date());
+
+  // ---------- Edit mode: the repeating A/B template ----------
+  if(editing){
+    if(!state.hwWeek) state.hwWeek = weekTypeFor(state.hwMonday) || 'A';
+    const w = state.hwWeek;
+    const head = `<div class="tt-cell tt-head">Class</div>` + DAYS.map(d=>`<div class="tt-cell tt-head"><span class="dow">${DAY_FULL[d]}</span></div>`).join('');
+    const rows = codes.map(code=>{
+      const info = classInfo(code);
+      return `<div class="tt-cell hw-class-cell"><span class="cc-dot cc-${info.color}"></span>${escapeHtml(info.label)}</div>` +
+        DAYS.map(d=>`<div class="tt-cell hw-edit"><textarea class="hw-input" data-class="${escapeHtml(code)}" data-day="${d}" placeholder="—" aria-label="${escapeHtml(info.label)} ${DAY_FULL[d]}">${escapeHtml(getHomework(w, code, d))}</textarea></div>`).join('');
+    }).join('');
+    return `
+      <div class="page-head">
+        <p class="page-eyebrow">Homework Timetable</p>
+        <h1 class="page-title">Editing Week ${w}</h1>
+      </div>
+      <div class="week-nav">
+        <div class="seg" role="group" aria-label="Week">
+          ${['A','B'].map(k=>`<button type="button" data-hw-week="${k}" aria-pressed="${k===w}">Week ${k}</button>`).join('')}
+        </div>
+        <span style="flex:1;"></span>
+        <button class="btn btn-sm" id="hw-copy">Copy to Week ${w==='A'?'B':'A'}</button>
+        <button class="btn btn-sm btn-primary" id="hw-edit-toggle">Done editing</button>
+      </div>
+      <p class="empty-note" style="margin:-10px 0 14px;">Write a short label wherever a class has homework, e.g. "Set" or "Sparx". Each one becomes a homework slot, with its own content box and ticks, every Week ${w}. Leave a cell blank for no homework.</p>
+      <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
+    `;
+  }
+
+  // ---------- Normal mode: a real week, with content + ticks ----------
+  const monday = state.hwMonday;
+  const w = weekTypeFor(monday);
+  const wk = weekOf(toISO(monday));
+  const todayISO = toISO(new Date());
+  const head = `<div class="tt-cell tt-head">Class</div>` + DAYS.map((d,i)=>{
+    const date = addDays(monday,i), iso = toISO(date);
+    return `<div class="tt-cell tt-head" style="${iso===todayISO?'background:var(--gold-wash);':''}"><span class="dow">${DAY_FULL[d]}</span><span class="ddate">${fmtShort(date)}</span></div>`;
+  }).join('');
+  const rows = codes.map(code=>{
+    const info = classInfo(code);
+    return `<div class="tt-cell hw-class-cell"><span class="cc-dot cc-${info.color}"></span>${escapeHtml(info.label)}</div>` +
+      DAYS.map((d,i)=>{
+        const iso = toISO(addDays(monday,i));
+        const slot = getHomework(w, code, d);
+        if(!slot || !isTeachingDay(iso)) return `<div class="tt-cell hw-cell ${isTeachingDay(iso)?'':'hw-off'}"></div>`;
+        const work = getHwWork(iso, code);
+        const k = escapeHtml(hwWorkKey(iso, code));
+        return `<div class="tt-cell tt-cc-${info.color} hw-slot ${work.created && work.smhw?'hw-done':''}" data-iso="${iso}" data-class="${escapeHtml(code)}">
+          <div class="hw-slot-label">${escapeHtml(slot)}</div>
+          <textarea class="hw-content" rows="2" placeholder="Homework details" aria-label="${escapeHtml(info.label)} homework, ${DAY_FULL[d]}">${escapeHtml(work.content)}</textarea>
+          <label class="hw-tick"><input type="checkbox" data-field="created" ${work.created?'checked':''}> Created</label>
+          <label class="hw-tick"><input type="checkbox" data-field="smhw" ${work.smhw?'checked':''}> On SMHW</label>
+        </div>`;
+      }).join('');
+  }).join('');
+  const hasTemplate = codes.some(c=>DAYS.some(d=>getHomework('A',c,d)||getHomework('B',c,d)));
+  const summary = hwSummaryText(monday);
+  let note = '';
+  if(!hasTemplate) note = `Nothing here yet. Tap "Edit homework timetable" to choose which classes get homework on which days.`;
+  else if(wk && wk.holiday) note = `${escapeHtml(wk.note||'Holiday')}, so there's no homework this week.`;
+  return `
+    <div class="page-head">
+      <p class="page-eyebrow">Homework Timetable</p>
+      <h1 class="page-title">Week ${w}</h1>
+    </div>
+    <div class="week-nav">
+      <button class="icon-btn" id="hw-prev" aria-label="Previous week">${ICONS.chevL}</button>
+      <span class="range">${fmtShort(monday)} – ${fmtShort(addDays(monday,4))}</span>
+      <button class="icon-btn" id="hw-next" aria-label="Next week">${ICONS.chevR}</button>
+      <button class="btn btn-sm" id="hw-today">This week</button>
+      <span style="flex:1;"></span>
+      <button class="btn btn-sm" id="hw-edit-toggle">Edit homework timetable</button>
+    </div>
+    ${note? `<p class="empty-note" style="margin:-10px 0 14px;">${note}</p>` : ''}
+    ${summary? `<p class="hw-summary" id="hw-summary">${summary}</p>` : ''}
+    <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
+  `;
+}
 
 /* ======================================================================
    DASHBOARD
@@ -1334,7 +1763,8 @@ function renderDashboard(){
     periodsHtml = computeDayRows(todayISO).map(row=>{
       if(row.type==='fixed'){
         const p = row.period;
-        return `<div class="period-fixed"><div class="period-time">${p.time}</div><div>${p.label}</div></div>`;
+        const act = activityFor(todayISO, p.key);
+        return `<div class="period-fixed"><div class="period-time">${p.time}</div><div class="period-fixed-main"><div>${p.label}</div>${activityChip(act)}</div></div>`;
       }
       if(row.type==='after'){
         const p = row.period;
@@ -1342,6 +1772,7 @@ function renderDashboard(){
         return `<div class="period-row">
           <div class="period-time"><strong>${p.label}</strong>${p.time}</div>
           <div class="period-main">
+            ${activityFor(todayISO,'after')? `<div class="after-acts">${activityChip(activityFor(todayISO,'after'))}</div>` : ''}
             <div class="lesson-preview after-edit-trigger ${text?'':'empty'}" data-date="${todayISO}">
               ${text ? escapeHtml(text) : 'Tap to add a note for after school'}
             </div>
@@ -1463,17 +1894,24 @@ function renderWeekly(){
   const rows = PERIODS.map(p=>{
     if(p.kind==='fixed'){
       return `<div class="tt-cell tt-time-cell"><strong>${p.label}</strong>${p.time}</div>` +
-        DAYS.map(()=>`<div class="tt-cell" style="background:#F1ECDF;min-height:30px;"></div>`).join('');
+        DAYS.map((d,i)=>{
+          if(state.editingTimetable) return `<div class="tt-cell tt-fixed-cell">${activityEditor(wType, d, p.key)}</div>`;
+          return `<div class="tt-cell tt-fixed-cell">${activityChip(activityFor(toISO(addDays(monday,i)), p.key), true)}</div>`;
+        }).join('');
     }
     const timeCell = `<div class="tt-cell tt-time-cell"><strong>${p.label}</strong>${p.time}</div>`;
     const dayCells = DAYS.map((d,i)=>{
       const date = addDays(monday,i);
       const iso = toISO(date);
       const isToday = iso===todayISO;
+      if(p.key==='after' && state.editingTimetable){
+        return `<div class="tt-cell">${activityEditor(wType, d, 'after')}</div>`;
+      }
       if(p.key==='after'){
         const text = store.afterSchool[iso]||'';
         const chip = dayAgendaChip(iso);
         return `<div class="tt-cell tt-lesson-cell ${isToday?'today-col':''}" data-after="1" data-date="${iso}">
+          ${activityChip(activityFor(iso,'after'), true)}
           ${chip}
           <span class="${text?'':'empty'}">${text? escapeHtml(text).slice(0,60) : 'Add note'}</span>
         </div>`;
@@ -1527,7 +1965,7 @@ function renderWeekly(){
         ${state.editingTimetable? 'Done editing' : 'Edit timetable'}
       </button>
     </div>
-    ${state.editingTimetable? `<p class="empty-note" style="margin:-10px 0 14px;">Editing Week ${wType} — changes apply to every Week ${wType} ${DAYS.map(d=>DAY_FULL[d]).join('/')} going forward. Leave a field blank for a free period.</p>` : ''}
+    ${state.editingTimetable? `<p class="empty-note" style="margin:-10px 0 14px;">Editing Week ${wType} — changes apply to every Week ${wType} ${DAYS.map(d=>DAY_FULL[d]).join('/')} going forward. Leave a field blank for a free period. Use Break, Lunch and After School to add duties, commutes and clubs; they'll show every Week ${wType} automatically.</p>` : ''}
     <div class="tt-scroll">
       <div class="tt-grid">${headRow}${rows}</div>
     </div>
@@ -1551,7 +1989,7 @@ function renderDaily(){
     body = `<div class="card" style="padding:6px 22px;">` + computeDayRows(iso).map(row=>{
       if(row.type==='fixed'){
         const p = row.period;
-        return `<div class="daily-fixed">${p.label} · ${p.time}</div>`;
+        return `<div class="daily-fixed">${p.label} · ${p.time}${activityChip(activityFor(iso, p.key))}</div>`;
       }
       if(row.type==='after'){
         const p = row.period;
@@ -1560,6 +1998,7 @@ function renderDaily(){
         return `<div class="daily-period">
           <div class="daily-time-col"><div class="lbl">${p.label}</div><div class="tm">${p.time}</div></div>
           <div class="daily-body">
+            ${activityFor(iso,'after')? `<div class="after-acts">${activityChip(activityFor(iso,'after'))}</div>` : ''}
             ${chip? `<div class="daily-agenda">${chip}</div>` : ''}
             <textarea class="after-input" data-date="${iso}" rows="2" placeholder="Clubs, meetings, planning, detentions…">${escapeHtml(text)}</textarea>
           </div>
@@ -1735,7 +2174,13 @@ function renderSettings(){
   return `
     <div class="page-head">
       <p class="page-eyebrow">Settings</p>
-      <h1 class="page-title">Data & backup</h1>
+      <h1 class="page-title">Appearance & data</h1>
+    </div>
+
+    <div class="card settings-block">
+      <h3>Colour theme</h3>
+      <p>Changes the colours across the whole planner. It's saved with your data, so it follows you to other devices.</p>
+      ${renderThemePicker()}
     </div>
 
     <div class="card settings-block">
@@ -2298,6 +2743,61 @@ function attachRouteHandlers(){
     });
   }
 
+  if(state.route==='classes'){
+    document.querySelectorAll('.class-tab').forEach(el=>{
+      el.addEventListener('click', ()=>{ state.classesCode = el.dataset.class; render(); });
+    });
+    document.querySelectorAll('[data-cls-filter]').forEach(el=>{
+      el.addEventListener('click', ()=>{ state.classesFilter = el.dataset.clsFilter; render(); });
+    });
+    document.querySelectorAll('.cls-lesson').forEach(el=>{
+      el.addEventListener('click', ()=>openLessonModal(el.dataset.date, el.dataset.period));
+    });
+  }
+
+  if(state.route==='homework'){
+    document.getElementById('hw-edit-toggle').onclick = ()=>{
+      state.editingHomework = !state.editingHomework;
+      if(state.editingHomework) state.hwWeek = weekTypeFor(state.hwMonday) || 'A';
+      render();
+    };
+    if(state.editingHomework){
+      document.querySelectorAll('[data-hw-week]').forEach(el=>{
+        el.addEventListener('click', ()=>{ state.hwWeek = el.dataset.hwWeek; render(); });
+      });
+      const save = debounce(()=>persist(), 400);
+      document.querySelectorAll('.hw-input').forEach(el=>{
+        el.addEventListener('input', ()=>{ setHomework(state.hwWeek, el.dataset.class, el.dataset.day, el.value.trim()); save(); });
+      });
+      document.getElementById('hw-copy').onclick = ()=>{
+        const from = state.hwWeek, to = from==='A'?'B':'A';
+        if(Object.keys(store.homework[to]).length && !confirm(`Replace everything in Week ${to} with Week ${from}?`)) return;
+        store.homework[to] = JSON.parse(JSON.stringify(store.homework[from]));
+        persist();
+        showToast(`Copied Week ${from} to Week ${to}`);
+      };
+    }else{
+      document.getElementById('hw-prev').onclick = ()=>{ state.hwMonday = addDays(state.hwMonday,-7); render(); };
+      document.getElementById('hw-next').onclick = ()=>{ state.hwMonday = addDays(state.hwMonday,7); render(); };
+      document.getElementById('hw-today').onclick = ()=>{ state.hwMonday = getMonday(new Date()); render(); };
+      const refreshSummary = ()=>{ const el = document.getElementById('hw-summary'); if(el) el.textContent = hwSummaryText(state.hwMonday); };
+      document.querySelectorAll('.hw-slot').forEach(cell=>{
+        const iso = cell.dataset.iso, code = cell.dataset.class;
+        const box = cell.querySelector('.hw-content');
+        box.addEventListener('input', debounce(()=>{ setHwWork(iso, code, {content: box.value.trim()}); persist(); }, 400));
+        cell.querySelectorAll('.hw-tick input').forEach(cb=>{
+          cb.addEventListener('change', ()=>{
+            setHwWork(iso, code, {[cb.dataset.field]: cb.checked});
+            persist();
+            const wk = getHwWork(iso, code);
+            cell.classList.toggle('hw-done', wk.created && wk.smhw);
+            refreshSummary();
+          });
+        });
+      });
+    }
+  }
+
   if(state.route==='plans'){
     document.querySelectorAll('.class-tab').forEach(el=>{
       el.addEventListener('click', ()=>{ state.planClass = el.dataset.class; render(); });
@@ -2323,6 +2823,9 @@ function attachRouteHandlers(){
   }
 
   if(state.route==='settings'){
+    document.querySelectorAll('[data-theme-key]').forEach(el=>{
+      el.addEventListener('click', ()=>{ store.theme = el.dataset.themeKey; persist(); render(); });
+    });
     document.getElementById('export-btn').onclick = exportData;
     document.getElementById('import-file').onchange = importData;
     document.getElementById('open-setup-btn').onclick = ()=>{ setupDraft = null; setupUi.editing = true; navigate('setup'); };
@@ -2357,6 +2860,10 @@ function saveTimetableEdits(){
     }else{
       store.timetableOverrides[wType][day][periodKey] = {class: cls, room: room};
     }
+  });
+  const wTypeAct = weekTypeFor(state.weekViewMonday);
+  document.querySelectorAll('[data-act-day]').forEach(el=>{
+    setTemplateActivity(wTypeAct, el.dataset.actDay, el.dataset.actSlot, el.querySelector('.act-type').value, el.querySelector('.act-text').value.trim());
   });
   persist();
   showToast('Timetable updated');
