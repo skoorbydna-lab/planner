@@ -568,6 +568,9 @@ label.field-label{
   min-height:58px;
 }
 .tt-grid > .tt-cell:nth-child(6n){border-right:none;}
+/* Weekly grid: doubles span two rows, so cells can't be counted; every cell keeps its right border instead */
+.tt-grid.wk-grid{border-right:none;}
+.tt-grid.wk-grid > .tt-cell{border-right:1px solid var(--line-soft);}
 .tt-head{
   background:var(--paper-dim);
   font-size:12px;font-weight:600;
@@ -1071,6 +1074,19 @@ function clearDailyOverride(dateISO, periodKey){
 // timetable slots that share a class/room and are both flagged `double`.
 // These helpers detect that pairing so the UI can show/edit them as one row.
 const DOUBLE_PAIRS = [['p1','p2'],['p3','p4'],['p5','p6']];
+// Two back-to-back periods with the same class code count as one double lesson.
+function isDoubleSlots(a, b){
+  return !!(a && b && a.class && a.class===b.class);
+}
+function doubleRoom(a, b){
+  return (!b.room || a.room===b.room) ? a.room : (a.room ? a.room+' / '+b.room : b.room);
+}
+// A double reads and writes its notes under the first period. If notes were written
+// under the second period before it became a double, move them across once.
+function adoptPartnerLesson(dateISO, keyA, keyB){
+  const a = lessonKey(dateISO, keyA), b = lessonKey(dateISO, keyB);
+  if(store.lessons[b] && !store.lessons[a]){ store.lessons[a] = store.lessons[b]; delete store.lessons[b]; persist(); }
+}
 function pairPartnerKey(periodKey){
   const pair = DOUBLE_PAIRS.find(([a])=>a===periodKey);
   return pair ? pair[1] : null;
@@ -1085,13 +1101,14 @@ function computeDayRows(dateISO){
     if(p.key==='after'){ rows.push({type:'after', period:p}); continue; }
     const slot = getSlotForDate(dateISO, p.key);
     const partnerKey = pairPartnerKey(p.key);
-    if(partnerKey && slot && slot.double){
+    if(partnerKey && slot){
       const partnerSlot = getSlotForDate(dateISO, partnerKey);
-      if(partnerSlot && partnerSlot.double && partnerSlot.class===slot.class && partnerSlot.room===slot.room){
+      if(isDoubleSlots(slot, partnerSlot)){
         const partnerPeriod = PERIODS.find(pp=>pp.key===partnerKey);
         const label = `${p.label} & ${partnerPeriod.label.split(' ').pop()}`;
         const time = slot.time || (p.time.split('–')[0]+'–'+partnerPeriod.time.split('–')[1]);
-        rows.push({type:'double', periodA:p, periodB:partnerPeriod, slot, label, time});
+        adoptPartnerLesson(dateISO, p.key, partnerKey);
+        rows.push({type:'double', periodA:p, periodB:partnerPeriod, slot:Object.assign({}, slot, {room:doubleRoom(slot, partnerSlot)}), label, time});
         skip = true;
         continue;
       }
@@ -2075,17 +2092,20 @@ function renderWeekly(){
         </div>`;
       }
       const info = classInfo(slot.class);
-      // If this is the second half of a merged double, read the lesson under the lead period's key
+      // Second half of a double: the first half's cell already spans this row.
       const asSecondOf = DOUBLE_PAIRS.find(([a,b])=>b===p.key);
-      let lessonKeyToUse = p.key;
-      if(asSecondOf){
-        const leadSlot = getSlotForDate(iso, asSecondOf[0]);
-        if(leadSlot && leadSlot.double && slot.double && leadSlot.class===slot.class && leadSlot.room===slot.room) lessonKeyToUse = asSecondOf[0];
-      }
-      const lesson = getLesson(iso, lessonKeyToUse);
-      return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
+      if(asSecondOf && isDoubleSlots(getSlotForDate(iso, asSecondOf[0]), slot)) return '';
+      const partnerKey = pairPartnerKey(p.key);
+      const partnerSlot = partnerKey ? getSlotForDate(iso, partnerKey) : null;
+      const isDbl = isDoubleSlots(slot, partnerSlot);
+      if(isDbl) adoptPartnerLesson(iso, p.key, partnerKey);
+      const partnerPeriod = isDbl ? PERIODS.find(pp=>pp.key===partnerKey) : null;
+      const room = isDbl ? doubleRoom(slot, partnerSlot) : slot.room;
+      const time = isDbl ? (slot.time || p.time.split('–')[0]+'–'+partnerPeriod.time.split('–')[1]) : slot.time;
+      const lesson = getLesson(iso, p.key);
+      return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" ${isDbl?'style="grid-row:span 2;"':''} data-lesson="1" data-date="${iso}" data-period="${p.key}">
         <span class="cname">${escapeHtml(info.label)}${overridden?' <span class="pill pill-gold" title="Changed for this date">•</span>':''}</span>
-        <span class="croom">${slot.room}${slot.time?' · '+slot.time:''}</span>
+        <span class="croom">${escapeHtml(room||'')}${time?' · '+time:''}${isDbl?' · Double':''}</span>
         ${hwTagForLesson(iso, slot.class, p.key)}
         ${lesson.title? `<span class="cnote">${escapeHtml(lesson.title)}</span>`:''}
       </div>`;
@@ -2110,7 +2130,7 @@ function renderWeekly(){
     </div>
     ${state.editingTimetable? `<p class="empty-note" style="margin:-10px 0 14px;">Editing Week ${wType} — changes apply to every Week ${wType} ${DAYS.map(d=>DAY_FULL[d]).join('/')} going forward. Leave a field blank for a free period. Use Break, Lunch and After School to add duties, commutes and clubs; they'll show every Week ${wType} automatically.</p>` : ''}
     <div class="tt-scroll">
-      <div class="tt-grid">${headRow}${rows}</div>
+      <div class="tt-grid wk-grid">${headRow}${rows}</div>
     </div>
     ${renderTodoCard('week', toISO(monday), 'todo-card-wide')}
   `;
@@ -2172,9 +2192,6 @@ function renderDaily(){
             </div>
             <div class="full"><label class="field-label">Notes / activities</label>
               <textarea class="lesson-field" data-field="notes" data-date="${iso}" data-period="${periodKey}" rows="3" placeholder="Key activities, resources, differentiation…">${escapeHtml(lesson.notes)}</textarea>
-            </div>
-            <div class="full"><label class="field-label">Homework / follow-up</label>
-              <input class="input lesson-field" data-field="homework" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.homework)}" placeholder="Set, due date…">
             </div>
           </div>
         </div>
@@ -2387,7 +2404,7 @@ function openLessonModal(dateISO, periodKey){
   if(asSecondOf){
     const leadSlot = getSlotForDate(dateISO, asSecondOf[0]);
     const thisSlot = getSlotForDate(dateISO, periodKey);
-    if(leadSlot && thisSlot && leadSlot.double && thisSlot.double && leadSlot.class===thisSlot.class && leadSlot.room===thisSlot.room){
+    if(isDoubleSlots(leadSlot, thisSlot)){
       periodKey = asSecondOf[0];
     }
   }
