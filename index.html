@@ -505,6 +505,15 @@ label.field-label{
 .hw-inline-text{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
 .hw-inline-content{margin-top:6px;font-size:13px;padding:6px 8px;min-height:44px;}
 .daily-body .hw-inline{margin:0 0 12px;}
+.hw-collect{display:flex;flex-direction:column;gap:4px;margin:4px 0 6px;padding:6px 9px;border-radius:7px;background:var(--slate-wash);border:1px solid var(--line-soft);}
+.hw-collect.done{background:var(--forest-wash);border-color:transparent;}
+.hw-collect-text{font-size:12px;color:var(--ink);line-height:1.35;}
+.hw-collect-from{color:var(--ink-faint);font-size:11px;}
+.hw-slot .hw-collect{margin:4px 0 0;}
+.hw-has-collect{padding:6px;}
+.hw-has-collect .hw-collect{margin:0;}
+.daily-body .hw-collect{margin:0 0 12px;}
+@media (min-width:700px){ .period-main .hw-collect, .daily-body .hw-collect{flex-direction:row;align-items:center;justify-content:space-between;} }
 
 /* ============================= ACTIVITIES ============================= */
 .act-chip{display:block;font-size:12px;line-height:1.35;padding:5px 8px;border-radius:6px;border-left:3px solid;}
@@ -926,7 +935,7 @@ function defaultStore(){
     customEvents: {},      // "YYYY-MM-DD" -> array of manually-added calendar/meeting notes for that date
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
     homework: {A:{}, B:{}},   // weekType -> classCode -> day -> text (the homework timetable template)
-    homeworkWork: {},         // "YYYY-MM-DD_classCode" -> {content, created, smhw} for a real date
+    homeworkWork: {},         // "YYYY-MM-DD_classCode" -> {content, created, smhw, collected} for a real date
     activities: {A:{}, B:{}},  // weekType -> day -> 'break'|'lunch'|'after' -> {type, text}: duties, commutes, clubs…
     autoCommute: true,        // add a commute at break/lunch when moving between the main site and the Y7 & 8 site
     hiddenClasses: [],        // class codes removed from the Classes / Homework / Long-Term Plans lists
@@ -1766,12 +1775,12 @@ function setHomework(w, code, day, text){
 }
 function hwWorkKey(iso, code){ return iso+'_'+code; }
 function getHwWork(iso, code){
-  return store.homeworkWork[hwWorkKey(iso, code)] || {content:'', created:false, smhw:false};
+  return Object.assign({content:'', created:false, smhw:false, collected:false}, store.homeworkWork[hwWorkKey(iso, code)]);
 }
 function setHwWork(iso, code, patch){
   const k = hwWorkKey(iso, code);
   const next = Object.assign({}, getHwWork(iso, code), patch);
-  if(!next.content && !next.created && !next.smhw) delete store.homeworkWork[k];
+  if(!next.content && !next.created && !next.smhw && !next.collected) delete store.homeworkWork[k];
   else store.homeworkWork[k] = next;
 }
 // The slots shown for a real week: every template entry for that week's A/B type, on teaching days.
@@ -1783,12 +1792,73 @@ function hwSlotsForWeek(monday){
   }));
   return out;
 }
+// ---- Collecting homework a week after it's set ----
+function classHasLessonOn(iso, code){
+  return LESSON_PERIODS.some(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+}
+// Collect on the first lesson with that class from a week after it was set (skipping holidays).
+function collectDateFor(setISO, code){
+  const start = addDays(fromISO(setISO), 7);
+  for(let i=0;i<35;i++){
+    const iso = toISO(addDays(start, i));
+    if(isTeachingDay(iso) && classHasLessonOn(iso, code)) return iso;
+  }
+  return toISO(start);
+}
+function hwSetOn(iso, code){
+  const d = fromISO(iso), day = dayKeyOf(d);
+  return !!(day && isTeachingDay(iso) && getHomework(weekTypeFor(d), code, day));
+}
+// Dates of homework for this class that should be collected on iso.
+function collectionsOn(iso, code){
+  const out = [], target = fromISO(iso);
+  for(let back=35; back>=7; back--){
+    const setISO = toISO(addDays(target, -back));
+    if(hwSetOn(setISO, code) && collectDateFor(setISO, code)===iso) out.push(setISO);
+  }
+  return out;
+}
+function collectBoxHtml(setISO, code){
+  const d = fromISO(setISO);
+  const label = getHomework(weekTypeFor(d), code, dayKeyOf(d));
+  const w = getHwWork(setISO, code);
+  const dow = d.toLocaleDateString('en-GB',{weekday:'short'});
+  return `<div class="hw-collect ${w.collected?'done':''}" data-iso="${setISO}" data-class="${escapeHtml(code)}">
+    <div class="hw-collect-text"><strong>Collect:</strong> ${escapeHtml(label)}${w.content? ', '+escapeHtml(w.content):''} <span class="hw-collect-from">(set ${dow} ${fmtShort(d)})</span></div>
+    <label class="hw-tick"><input type="checkbox" data-field="collected" ${w.collected?'checked':''}> Collected</label>
+  </div>`;
+}
+// For the Dashboard / Daily View: only on the class's first lesson of the day.
+function hwCollectForLesson(iso, code, periodKey){
+  if(!code || !isTeachingDay(iso)) return '';
+  const first = LESSON_PERIODS.find(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+  if(!first || first.key!==periodKey) return '';
+  return collectionsOn(iso, code).map(setISO=>collectBoxHtml(setISO, code)).join('');
+}
+document.addEventListener('change', e=>{
+  const box = e.target.closest && e.target.closest('.hw-collect');
+  if(!box || !e.target.matches('input[type=checkbox]')) return;
+  setHwWork(box.dataset.iso, box.dataset.class, {collected: e.target.checked});
+  persist();
+  box.classList.toggle('done', e.target.checked);
+  const el = document.getElementById('hw-summary');
+  if(el && state.route==='homework') el.textContent = hwSummaryText(state.hwMonday);
+});
 function hwSummaryText(monday){
   const slots = hwSlotsForWeek(monday);
-  if(!slots.length) return '';
-  const created = slots.filter(x=>getHwWork(x.iso,x.code).created).length;
-  const smhw = slots.filter(x=>getHwWork(x.iso,x.code).smhw).length;
-  return `${slots.length} homework${slots.length===1?'':'s'} this week: ${created} created, ${smhw} on SMHW`;
+  const toCollect = [];
+  sortedClassCodes().forEach(code=>{ for(let i=0;i<5;i++){ const iso = toISO(addDays(monday,i)); collectionsOn(iso, code).forEach(setISO=>toCollect.push({setISO, code})); } });
+  const parts = [];
+  if(slots.length){
+    const created = slots.filter(x=>getHwWork(x.iso,x.code).created).length;
+    const smhw = slots.filter(x=>getHwWork(x.iso,x.code).smhw).length;
+    parts.push(`${slots.length} homework${slots.length===1?'':'s'} to set: ${created} created, ${smhw} on SMHW`);
+  }
+  if(toCollect.length){
+    const got = toCollect.filter(x=>getHwWork(x.setISO, x.code).collected).length;
+    parts.push(`${got} of ${toCollect.length} collected`);
+  }
+  return parts.length ? 'This week: '+parts.join('. ') : '';
 }
 // Homework due to show on a lesson: only on that class's first lesson of the day, so it never repeats.
 function hwTagForLesson(iso, code, periodKey){
@@ -1889,7 +1959,11 @@ function renderHomework(){
       DAYS.map((d,i)=>{
         const iso = toISO(addDays(monday,i));
         const slot = getHomework(w, code, d);
-        if(!slot || !isTeachingDay(iso)) return `<div class="tt-cell hw-cell ${isTeachingDay(iso)?'':'hw-off'}"></div>`;
+        const collects = isTeachingDay(iso) ? collectionsOn(iso, code).map(setISO=>collectBoxHtml(setISO, code)).join('') : '';
+        if(!slot || !isTeachingDay(iso)){
+          if(collects) return `<div class="tt-cell hw-cell hw-has-collect">${collects}</div>`;
+          return `<div class="tt-cell hw-cell ${isTeachingDay(iso)?'':'hw-off'}"></div>`;
+        }
         const work = getHwWork(iso, code);
         const k = escapeHtml(hwWorkKey(iso, code));
         return `<div class="tt-cell tt-cc-${info.color} hw-slot ${work.created && work.smhw?'hw-done':''}" data-iso="${iso}" data-class="${escapeHtml(code)}">
@@ -1897,6 +1971,7 @@ function renderHomework(){
           <textarea class="hw-content" rows="2" placeholder="Homework details" aria-label="${escapeHtml(info.label)} homework, ${DAY_FULL[d]}">${escapeHtml(work.content)}</textarea>
           <label class="hw-tick"><input type="checkbox" data-field="created" ${work.created?'checked':''}> Created</label>
           <label class="hw-tick"><input type="checkbox" data-field="smhw" ${work.smhw?'checked':''}> On SMHW</label>
+          ${collects}
         </div>`;
       }).join('');
   }).join('');
@@ -1919,7 +1994,7 @@ function renderHomework(){
       <button class="btn btn-sm" id="hw-edit-toggle">Edit homework timetable</button>
     </div>
     ${note? `<p class="empty-note" style="margin:-10px 0 14px;">${note}</p>` : ''}
-    ${summary? `<p class="hw-summary" id="hw-summary">${summary}</p>` : ''}
+    <p class="hw-summary" id="hw-summary">${summary}</p>
     ${staleNotice()}
     <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
   `;
@@ -1986,7 +2061,7 @@ function renderDashboard(){
             <span class="period-class-name">${info? escapeHtml(info.label) : 'Free period'}</span>
             ${slot? `<span class="period-room pill pill-muted">${slot.room}</span>`:''}
           </div>
-          ${slot? hwInlineForLesson(todayISO, slot.class, periodKey, false) : ''}
+          ${slot? hwInlineForLesson(todayISO, slot.class, periodKey, false) + hwCollectForLesson(todayISO, slot.class, periodKey) : ''}
           ${`<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${periodKey}">
             ${lesson.title ? escapeHtml(lesson.title) : (slot? 'Tap to add lesson content' : 'Free — tap to add a note')}
           </div>`}
@@ -2220,7 +2295,7 @@ function renderDaily(){
             ${info? `<span class="pill pill-${info.color}">${escapeHtml(info.label)}</span>`:''}
             ${overridden? `<a href="#" class="slot-reset" data-date="${iso}" data-period="${periodKey}" data-partner="${partnerKey}" style="font-size:11.5px;color:var(--ink-soft);">reset</a>` : ''}
           </div>
-          ${slot? hwInlineForLesson(iso, slot.class, periodKey, true) : ''}
+          ${slot? hwInlineForLesson(iso, slot.class, periodKey, true) + hwCollectForLesson(iso, slot.class, periodKey) : ''}
           <div class="daily-fields">
             <div class="full"><label class="field-label">Lesson focus / title</label>
               <input class="input lesson-field" data-field="title" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.title)}" placeholder="e.g. Integration by substitution">
@@ -2992,7 +3067,7 @@ function attachRouteHandlers(){
         const iso = cell.dataset.iso, code = cell.dataset.class;
         const box = cell.querySelector('.hw-content');
         box.addEventListener('input', debounce(()=>{ setHwWork(iso, code, {content: box.value.trim()}); persist(); }, 400));
-        cell.querySelectorAll('.hw-tick input').forEach(cb=>{
+        cell.querySelectorAll(':scope > .hw-tick input').forEach(cb=>{
           cb.addEventListener('change', ()=>{
             setHwWork(iso, code, {[cb.dataset.field]: cb.checked});
             persist();
