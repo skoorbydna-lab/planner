@@ -498,6 +498,14 @@ label.field-label{
 .tt-hw-ticks span.on{color:var(--forest);font-weight:600;}
 .tt-hw-ticks span.on::before{content:"✓ ";}
 
+.hw-inline{margin:4px 0 6px;padding:7px 10px;border-radius:7px;background:var(--gold-wash);border:1px solid var(--chip-line);}
+.hw-inline.done{background:var(--forest-wash);border-color:transparent;}
+.hw-inline-head{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;}
+.hw-inline-label{font-size:12.5px;font-weight:600;color:var(--ink);margin-right:auto;}
+.hw-inline-text{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+.hw-inline-content{margin-top:6px;font-size:13px;padding:6px 8px;min-height:44px;}
+.daily-body .hw-inline{margin:0 0 12px;}
+
 /* ============================= ACTIVITIES ============================= */
 .act-chip{display:block;font-size:12px;line-height:1.35;padding:5px 8px;border-radius:6px;border-left:3px solid;}
 .act-chip strong{font-weight:700;}
@@ -1745,6 +1753,40 @@ function hwTagForLesson(iso, code, periodKey){
     <span class="tt-hw-ticks"><span class="${w.created?'on':''}">Created</span><span class="${w.smhw?'on':''}">SMHW</span></span>
   </span>`;
 }
+// Editable homework box for the Dashboard and Daily View (same data as the Homework Timetable tab).
+function hwInlineForLesson(iso, code, periodKey, withContentBox){
+  const date = fromISO(iso), d = dayKeyOf(date);
+  if(!d || !code || !isTeachingDay(iso)) return '';
+  const label = getHomework(weekTypeFor(date), code, d);
+  if(!label) return '';
+  const first = LESSON_PERIODS.find(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+  if(!first || first.key!==periodKey) return '';
+  const w = getHwWork(iso, code);
+  return `<div class="hw-inline ${w.created && w.smhw?'done':''}" data-iso="${iso}" data-class="${escapeHtml(code)}">
+    <div class="hw-inline-head"><span class="hw-inline-label">Homework: ${escapeHtml(label)}</span>
+      <label class="hw-tick"><input type="checkbox" data-field="created" ${w.created?'checked':''}> Created</label>
+      <label class="hw-tick"><input type="checkbox" data-field="smhw" ${w.smhw?'checked':''}> On SMHW</label>
+    </div>
+    ${withContentBox
+      ? `<textarea class="hw-inline-content" rows="2" placeholder="Homework details" aria-label="Homework details">${escapeHtml(w.content)}</textarea>`
+      : (w.content? `<div class="hw-inline-text">${escapeHtml(w.content)}</div>` : '')}
+  </div>`;
+}
+document.addEventListener('change', e=>{
+  const box = e.target.closest && e.target.closest('.hw-inline');
+  if(!box || !e.target.matches('input[type=checkbox]')) return;
+  setHwWork(box.dataset.iso, box.dataset.class, {[e.target.dataset.field]: e.target.checked});
+  persist();
+  const w = getHwWork(box.dataset.iso, box.dataset.class);
+  box.classList.toggle('done', w.created && w.smhw);
+});
+const persistSoon = debounce(()=>persist(), 400);
+document.addEventListener('input', e=>{
+  if(!(e.target.classList && e.target.classList.contains('hw-inline-content'))) return;
+  const box = e.target.closest('.hw-inline');
+  setHwWork(box.dataset.iso, box.dataset.class, {content: e.target.value.trim()});
+  persistSoon();
+});
 function renderHomework(){
   const editing = !!state.editingHomework;
   const codes = sortedClassCodes();
@@ -1892,6 +1934,7 @@ function renderDashboard(){
             <span class="period-class-name">${info? escapeHtml(info.label) : 'Free period'}</span>
             ${slot? `<span class="period-room pill pill-muted">${slot.room}</span>`:''}
           </div>
+          ${slot? hwInlineForLesson(todayISO, slot.class, periodKey, false) : ''}
           ${`<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${periodKey}">
             ${lesson.title ? escapeHtml(lesson.title) : (slot? 'Tap to add lesson content' : 'Free — tap to add a note')}
           </div>`}
@@ -2122,6 +2165,7 @@ function renderDaily(){
             ${info? `<span class="pill pill-${info.color}">${escapeHtml(info.label)}</span>`:''}
             ${overridden? `<a href="#" class="slot-reset" data-date="${iso}" data-period="${periodKey}" data-partner="${partnerKey}" style="font-size:11.5px;color:var(--ink-soft);">reset</a>` : ''}
           </div>
+          ${slot? hwInlineForLesson(iso, slot.class, periodKey, true) : ''}
           <div class="daily-fields">
             <div class="full"><label class="field-label">Lesson focus / title</label>
               <input class="input lesson-field" data-field="title" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.title)}" placeholder="e.g. Integration by substitution">
