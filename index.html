@@ -515,6 +515,7 @@ label.field-label{
 .act-club{background:var(--teal-wash);border-color:var(--teal);color:var(--teal);}
 .act-meeting{background:var(--gold-wash);border-color:var(--gold);color:var(--gold);}
 .act-other{background:var(--plum-wash);border-color:var(--plum);color:var(--plum);}
+.tt-fixed-cell .act-chip + .act-chip, .period-fixed-main .act-chip + .act-chip, .daily-fixed .act-chip + .act-chip{margin-top:3px;}
 .act-editor{display:flex;flex-direction:column;gap:4px;}
 .act-editor .input{padding:4px 6px;font-size:11.5px;}
 .tt-fixed-cell{background:var(--fixed-row);min-height:30px;padding:5px 6px;}
@@ -927,6 +928,7 @@ function defaultStore(){
     homework: {A:{}, B:{}},   // weekType -> classCode -> day -> text (the homework timetable template)
     homeworkWork: {},         // "YYYY-MM-DD_classCode" -> {content, created, smhw} for a real date
     activities: {A:{}, B:{}},  // weekType -> day -> 'break'|'lunch'|'after' -> {type, text}: duties, commutes, clubs…
+    autoCommute: true,        // add a commute at break/lunch when moving between the main site and the Y7 & 8 site
     hiddenClasses: [],        // class codes removed from the Classes / Homework / Long-Term Plans lists
     theme: 'classic',         // colour theme key, see THEMES
     todos: {week:{}, day:{}}, // week: Monday "YYYY-MM-DD" -> [{id,text,done}], day: "YYYY-MM-DD" -> [{id,text,done}]
@@ -957,6 +959,7 @@ function normalizeStore(obj){
   if(!st.activities.A) st.activities.A = {};
   if(!st.activities.B) st.activities.B = {};
   if(!Array.isArray(st.hiddenClasses)) st.hiddenClasses = [];
+  if(typeof st.autoCommute!=='boolean') st.autoCommute = true;
   if(!st.theme) st.theme = 'classic';
   return st;
 }
@@ -1371,10 +1374,43 @@ function activityFor(dateISO, slot){
   if(!d || !isTeachingDay(dateISO)) return null;
   return getTemplateActivity(weekTypeFor(date), d, slot);
 }
+// ---- Automatic commutes between the main site and the Y7 & 8 site ----
+function classYear(code){
+  const m = String(code||'').match(/^\s*(?:Y(?:ear)?\s*)?(\d{1,2})/i);
+  return m ? parseInt(m[1],10) : null;
+}
+function classSite(code){
+  const y = classYear(code);
+  return (y===7 || y===8) ? 'lower' : 'main';
+}
+const COMMUTE_GAPS = {
+  break: {before:['p2','p1','reg'], after:['p3','p4']},
+  lunch: {before:['p4','p3'],       after:['p5','p6']}
+};
+// Returns the site you need to get to across this break/lunch, or null if you stay put.
+function autoCommuteFor(dateISO, slot){
+  if(!store.autoCommute || !COMMUTE_GAPS[slot]) return null;
+  const date = fromISO(dateISO);
+  if(!dayKeyOf(date) || !isTeachingDay(dateISO)) return null;
+  const firstClass = keys=>{ for(const k of keys){ const sl = getSlotForDate(dateISO, k); if(sl && sl.class) return sl.class; } return null; };
+  const before = firstClass(COMMUTE_GAPS[slot].before), after = firstClass(COMMUTE_GAPS[slot].after);
+  if(!before || !after) return null;
+  const from = classSite(before), to = classSite(after);
+  if(from===to) return null;
+  return {type:'commute', text: to==='lower' ? 'To Y7 & 8 site' : 'To main site', auto:true};
+}
+// Everything to show in a break or lunch slot: the activity you set, plus any automatic commute.
+function breakActivitiesHtml(dateISO, slot, compact){
+  const manual = activityFor(dateISO, slot);
+  const auto = autoCommuteFor(dateISO, slot);
+  const list = [manual];
+  if(auto && !(manual && manual.type==='commute')) list.push(auto);
+  return list.filter(Boolean).map(a=>activityChip(a, compact)).join('');
+}
 function activityChip(act, compact){
   if(!act) return '';
   const t = ACTIVITY_TYPES.find(x=>x.key===act.type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length-1];
-  return `<span class="act-chip act-${t.key} ${compact?'compact':''}"><strong>${t.label}</strong>${act.text? ' '+escapeHtml(act.text):''}</span>`;
+  return `<span class="act-chip act-${t.key} ${compact?'compact':''}" ${act.auto?'title="Added automatically from your timetable"':''}><strong>${t.label}</strong>${act.text? ' '+escapeHtml(act.text):''}</span>`;
 }
 function activityEditor(w, day, slot){
   const act = getTemplateActivity(w, day, slot) || {type:'', text:''};
@@ -1921,8 +1957,7 @@ function renderDashboard(){
     periodsHtml = computeDayRows(todayISO).map(row=>{
       if(row.type==='fixed'){
         const p = row.period;
-        const act = activityFor(todayISO, p.key);
-        return `<div class="period-fixed"><div class="period-time">${p.time}</div><div class="period-fixed-main"><div>${p.label}</div>${activityChip(act)}</div></div>`;
+        return `<div class="period-fixed"><div class="period-time">${p.time}</div><div class="period-fixed-main"><div>${p.label}</div>${breakActivitiesHtml(todayISO, p.key)}</div></div>`;
       }
       if(row.type==='after'){
         const p = row.period;
@@ -2055,7 +2090,7 @@ function renderWeekly(){
       return `<div class="tt-cell tt-time-cell"><strong>${p.label}</strong>${p.time}</div>` +
         DAYS.map((d,i)=>{
           if(state.editingTimetable) return `<div class="tt-cell tt-fixed-cell">${activityEditor(wType, d, p.key)}</div>`;
-          return `<div class="tt-cell tt-fixed-cell">${activityChip(activityFor(toISO(addDays(monday,i)), p.key), true)}</div>`;
+          return `<div class="tt-cell tt-fixed-cell">${breakActivitiesHtml(toISO(addDays(monday,i)), p.key, true)}</div>`;
         }).join('');
     }
     const timeCell = `<div class="tt-cell tt-time-cell"><strong>${p.label}</strong>${p.time}</div>`;
@@ -2152,7 +2187,7 @@ function renderDaily(){
     body = `<div class="card" style="padding:6px 22px;">` + computeDayRows(iso).map(row=>{
       if(row.type==='fixed'){
         const p = row.period;
-        return `<div class="daily-fixed">${p.label} · ${p.time}${activityChip(activityFor(iso, p.key))}</div>`;
+        return `<div class="daily-fixed">${p.label} · ${p.time}${breakActivitiesHtml(iso, p.key)}</div>`;
       }
       if(row.type==='after'){
         const p = row.period;
@@ -2341,6 +2376,12 @@ function renderSettings(){
       <h3>Colour theme</h3>
       <p>Changes the colours across the whole planner. It's saved with your data, so it follows you to other devices.</p>
       ${renderThemePicker()}
+    </div>
+
+    <div class="card settings-block">
+      <h3>Automatic commutes</h3>
+      <p>Adds a commute to break or lunch when your lesson before is on the main site and the one after is on the Y7 &amp; 8 site, or the other way round. Year 7 and 8 classes are spotted from class codes starting with 7 or 8.</p>
+      <label class="hw-tick" style="font-size:13.5px;"><input type="checkbox" id="auto-commute-toggle" ${store.autoCommute?'checked':''}> Add commutes automatically</label>
     </div>
 
     ${store.hiddenClasses.length? `<div class="card settings-block">
@@ -2989,6 +3030,8 @@ function attachRouteHandlers(){
   }
 
   if(state.route==='settings'){
+    const acToggle = document.getElementById('auto-commute-toggle');
+    if(acToggle) acToggle.onchange = ()=>{ store.autoCommute = acToggle.checked; persist(); showToast(acToggle.checked ? 'Automatic commutes on' : 'Automatic commutes off'); };
     document.querySelectorAll('[data-theme-key]').forEach(el=>{
       el.addEventListener('click', ()=>{ store.theme = el.dataset.themeKey; persist(); render(); });
     });
