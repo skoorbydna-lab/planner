@@ -489,6 +489,15 @@ label.field-label{
 .hw-summary{font-size:13px;color:var(--ink-soft);margin:-6px 0 12px;}
 .hw-edit textarea{width:100%;min-height:52px;font-size:12.5px;padding:6px 7px;resize:vertical;}
 
+/* ============================= HOMEWORK ON TIMETABLE ============================= */
+.tt-hw{display:flex;flex-direction:column;gap:2px;margin-top:3px;padding:3px 6px;border-radius:5px;background:var(--gold-wash);border:1px solid var(--chip-line);}
+.tt-hw.done{background:var(--forest-wash);border-color:transparent;}
+.tt-hw-label{font-size:10.5px;font-weight:600;color:var(--ink);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.tt-hw-ticks{display:flex;gap:6px;font-size:9.5px;color:var(--ink-faint);}
+.tt-hw-ticks span::before{content:"○ ";}
+.tt-hw-ticks span.on{color:var(--forest);font-weight:600;}
+.tt-hw-ticks span.on::before{content:"✓ ";}
+
 /* ============================= ACTIVITIES ============================= */
 .act-chip{display:block;font-size:12px;line-height:1.35;padding:5px 8px;border-radius:6px;border-left:3px solid;}
 .act-chip strong{font-weight:700;}
@@ -1720,6 +1729,22 @@ function hwSummaryText(monday){
   const smhw = slots.filter(x=>getHwWork(x.iso,x.code).smhw).length;
   return `${slots.length} homework${slots.length===1?'':'s'} this week: ${created} created, ${smhw} on SMHW`;
 }
+// Homework due to show on a lesson: only on that class's first lesson of the day, so it never repeats.
+function hwTagForLesson(iso, code, periodKey){
+  const date = fromISO(iso), d = dayKeyOf(date);
+  if(!d || !code || !isTeachingDay(iso)) return '';
+  const label = getHomework(weekTypeFor(date), code, d);
+  if(!label) return '';
+  const first = LESSON_PERIODS.find(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+  if(!first || first.key!==periodKey) return '';
+  const w = getHwWork(iso, code);
+  const done = w.created && w.smhw;
+  const status = done ? 'Created, on SMHW' : w.created ? 'Created, not on SMHW yet' : 'Not created yet';
+  return `<span class="tt-hw ${done?'done':''}" title="Homework: ${status}">
+    <span class="tt-hw-label">Hwk: ${escapeHtml(label)}${w.content? ', '+escapeHtml(w.content) : ''}</span>
+    <span class="tt-hw-ticks"><span class="${w.created?'on':''}">Created</span><span class="${w.smhw?'on':''}">SMHW</span></span>
+  </span>`;
+}
 function renderHomework(){
   const editing = !!state.editingHomework;
   const codes = sortedClassCodes();
@@ -2018,6 +2043,7 @@ function renderWeekly(){
       return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
         <span class="cname">${escapeHtml(info.label)}${overridden?' <span class="pill pill-gold" title="Changed for this date">•</span>':''}</span>
         <span class="croom">${slot.room}${slot.time?' · '+slot.time:''}</span>
+        ${hwTagForLesson(iso, slot.class, p.key)}
         ${lesson.title? `<span class="cnote">${escapeHtml(lesson.title)}</span>`:''}
       </div>`;
     }).join('');
