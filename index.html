@@ -662,6 +662,23 @@ label.field-label{
   background:var(--paper-card);font-size:13px;font-weight:500;cursor:pointer;
 }
 .class-tab.active{background:var(--inverse-bg);color:var(--inverse-ink);border-color:var(--inverse-bg);}
+.class-tab-wrap{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:20px;background:var(--paper-card);}
+.class-tab-wrap .class-tab{border:none;background:transparent;padding-right:4px;color:var(--ink);}
+.class-tab-wrap.active{background:var(--inverse-bg);border-color:var(--inverse-bg);}
+.class-tab-wrap.active .class-tab, .class-tab-wrap.active .class-tab-del{color:var(--inverse-ink);}
+.class-tab-wrap.stale{border-style:dashed;}
+.class-tab-wrap.stale .class-tab{color:var(--ink-soft);}
+.class-tab-del{width:24px;height:24px;margin-right:4px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:50%;color:var(--ink-faint);cursor:pointer;flex-shrink:0;}
+.class-tab-del svg{width:11px;height:11px;}
+.class-tab-del:hover,.class-tab-del:focus-visible{background:var(--brick-wash);color:var(--brick);}
+.hw-class-cell .hw-class-name{flex:1;min-width:0;}
+.hw-class-cell .class-tab-del{margin-right:-4px;}
+.hw-class-cell.stale .hw-class-name{color:var(--ink-faint);text-decoration:line-through;text-decoration-style:dashed;}
+.stale-note{font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;}
+.link-btn{border:none;background:none;padding:0;font:inherit;color:var(--forest);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.restore-list{display:flex;flex-direction:column;gap:8px;}
+.restore-item{display:flex;align-items:center;gap:8px;font-size:13.5px;}
+.restore-item .btn{margin-left:auto;}
 .plan-half{margin-bottom:16px;}
 .plan-half .field-label{margin-bottom:6px;}
 
@@ -890,6 +907,7 @@ function defaultStore(){
     homework: {A:{}, B:{}},   // weekType -> classCode -> day -> text (the homework timetable template)
     homeworkWork: {},         // "YYYY-MM-DD_classCode" -> {content, created, smhw} for a real date
     activities: {A:{}, B:{}},  // weekType -> day -> 'break'|'lunch'|'after' -> {type, text}: duties, commutes, clubs…
+    hiddenClasses: [],        // class codes removed from the Classes / Homework / Long-Term Plans lists
     theme: 'classic',         // colour theme key, see THEMES
     todos: {week:{}, day:{}}, // week: Monday "YYYY-MM-DD" -> [{id,text,done}], day: "YYYY-MM-DD" -> [{id,text,done}]
     weekAnchor: WEEK_ANCHOR,
@@ -918,6 +936,7 @@ function normalizeStore(obj){
   if(!st.activities || typeof st.activities!=='object') st.activities = {};
   if(!st.activities.A) st.activities.A = {};
   if(!st.activities.B) st.activities.B = {};
+  if(!Array.isArray(st.hiddenClasses)) st.hiddenClasses = [];
   if(!st.theme) st.theme = 'classic';
   return st;
 }
@@ -1143,7 +1162,8 @@ function allClassCodes(){
     const sl = tt?.[w]?.[d]?.[pr.key]; if(sl && sl.class) set.add(sl.class);
     const ov = store.timetableOverrides?.[w]?.[d]?.[pr.key]; if(ov && ov.class) set.add(ov.class);
   })));
-  return Array.from(set);
+  const hidden = new Set(store.hiddenClasses||[]);
+  return Array.from(set).filter(c=>!hidden.has(c));
 }
 function weekOf(dateISO){
   return TERM_CALENDAR.find(w=>{
@@ -1525,6 +1545,60 @@ function renderThemePicker(){
 function sortedClassCodes(){
   return allClassCodes().sort((a,b)=> classInfo(a).label.localeCompare(classInfo(b).label));
 }
+// Is this class anywhere on the current A/B timetable?
+function classOnTimetable(code){
+  return ['A','B'].some(w=>DAYS.some(d=>LESSON_PERIODS.some(p=>{ const sl = getSlot(w,d,p.key); return sl && sl.class===code; })));
+}
+function staleClassCodes(){ return sortedClassCodes().filter(c=>!classOnTimetable(c)); }
+function hideClass(code){
+  if(!store.hiddenClasses.includes(code)) store.hiddenClasses.push(code);
+  persist();
+}
+function renderClassTabs(codes, active){
+  return `<div class="class-tabs">
+    ${codes.map(c=>{
+      const i = classInfo(c), stale = !classOnTimetable(c);
+      return `<span class="class-tab-wrap ${c===active?'active':''} ${stale?'stale':''}">
+        <button class="class-tab ${c===active?'active':''}" data-class="${escapeHtml(c)}" ${stale?'title="Not on your timetable"':''}><span class="cc-dot cc-${i.color}"></span> ${escapeHtml(i.label)}</button>
+        <button type="button" class="class-tab-del" data-hide-class="${escapeHtml(c)}" aria-label="Remove ${escapeHtml(i.label)} from class lists" title="Remove from lists">${ICONS.close}</button>
+      </span>`;
+    }).join('')}
+  </div>${staleNotice()}`;
+}
+function staleNotice(){
+  const stale = staleClassCodes();
+  if(!stale.length) return '';
+  return `<p class="stale-note">${stale.length} class${stale.length===1?' isn\'t':'es aren\'t'} on your timetable any more (shown with a dashed outline). <button type="button" class="link-btn" data-hide-stale="1">Remove ${stale.length===1?'it':'them'}</button></p>`;
+}
+// Removing / restoring classes works the same from every tab.
+document.addEventListener('click', e=>{
+  const one = e.target.closest('[data-hide-class]');
+  if(one){
+    const code = one.dataset.hideClass, label = classInfo(code).label;
+    const warn = classOnTimetable(code) ? `\n\n${label} is still on your timetable, so it will keep showing there.` : '';
+    if(!confirm(`Remove ${label} from your class lists? Its lesson notes and plans are kept, and you can bring it back in Settings.${warn}`)) return;
+    hideClass(code);
+    showToast(`Removed ${label}`);
+    render();
+    return;
+  }
+  if(e.target.closest('[data-hide-stale]')){
+    const stale = staleClassCodes();
+    if(!confirm(`Remove ${stale.map(c=>classInfo(c).label).join(', ')} from your class lists? Their notes and plans are kept, and you can bring them back in Settings.`)) return;
+    stale.forEach(c=>{ if(!store.hiddenClasses.includes(c)) store.hiddenClasses.push(c); });
+    persist();
+    showToast(`Removed ${stale.length} class${stale.length===1?'':'es'}`);
+    render();
+    return;
+  }
+  const restore = e.target.closest('[data-restore-class]');
+  if(restore){
+    store.hiddenClasses = store.hiddenClasses.filter(c=>c!==restore.dataset.restoreClass);
+    persist();
+    showToast(`Restored ${classInfo(restore.dataset.restoreClass).label}`);
+    render();
+  }
+});
 function lessonsForClass(code){
   const out = [];
   let half = 0, seenTeaching = false;
@@ -1552,7 +1626,7 @@ function lessonsForClass(code){
 }
 function renderClasses(){
   const codes = sortedClassCodes();
-  if(!codes.length) return `<div class="page-head"><h1 class="page-title">Classes</h1></div><p class="empty-note">Add your classes in Settings → Open setup to see them here.</p>`;
+  if(!codes.length) return `<div class="page-head"><h1 class="page-title">Classes</h1></div><p class="empty-note">No classes to show. Add classes in Settings → Open setup, or bring back removed ones in Settings.</p>`;
   if(!state.classesCode || !codes.includes(state.classesCode)) state.classesCode = codes[0];
   if(!state.classesFilter) state.classesFilter = 'upcoming';
   const code = state.classesCode, info = classInfo(code), filter = state.classesFilter;
@@ -1597,9 +1671,7 @@ function renderClasses(){
       <p class="page-eyebrow">Classes</p>
       <h1 class="page-title">${escapeHtml(info.label)}</h1>
     </div>
-    <div class="class-tabs">
-      ${codes.map(c=>`<button class="class-tab ${c===code?'active':''}" data-class="${escapeHtml(c)}"><span class="cc-dot cc-${classInfo(c).color}"></span> ${escapeHtml(classInfo(c).label)}</button>`).join('')}
-    </div>
+    ${renderClassTabs(codes, code)}
     <div class="cls-toolbar">
       <div class="seg" role="group" aria-label="Which lessons to show">
         ${[['upcoming','Upcoming'],['past','Past'],['all','Whole year']].map(([k,l])=>`<button type="button" data-cls-filter="${k}" aria-pressed="${k===filter}">${l}</button>`).join('')}
@@ -1660,7 +1732,7 @@ function renderHomework(){
     const head = `<div class="tt-cell tt-head">Class</div>` + DAYS.map(d=>`<div class="tt-cell tt-head"><span class="dow">${DAY_FULL[d]}</span></div>`).join('');
     const rows = codes.map(code=>{
       const info = classInfo(code);
-      return `<div class="tt-cell hw-class-cell"><span class="cc-dot cc-${info.color}"></span>${escapeHtml(info.label)}</div>` +
+      return `<div class="tt-cell hw-class-cell ${classOnTimetable(code)?'':'stale'}"><span class="cc-dot cc-${info.color}"></span><span class="hw-class-name">${escapeHtml(info.label)}</span><button type="button" class="class-tab-del" data-hide-class="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(info.label)} from class lists" title="Remove from lists">${ICONS.close}</button></div>` +
         DAYS.map(d=>`<div class="tt-cell hw-edit"><textarea class="hw-input" data-class="${escapeHtml(code)}" data-day="${d}" placeholder="—" aria-label="${escapeHtml(info.label)} ${DAY_FULL[d]}">${escapeHtml(getHomework(w, code, d))}</textarea></div>`).join('');
     }).join('');
     return `
@@ -1677,6 +1749,7 @@ function renderHomework(){
         <button class="btn btn-sm btn-primary" id="hw-edit-toggle">Done editing</button>
       </div>
       <p class="empty-note" style="margin:-10px 0 14px;">Write a short label wherever a class has homework, e.g. "Set" or "Sparx". Each one becomes a homework slot, with its own content box and ticks, every Week ${w}. Leave a cell blank for no homework.</p>
+      ${staleNotice()}
       <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
     `;
   }
@@ -1692,7 +1765,7 @@ function renderHomework(){
   }).join('');
   const rows = codes.map(code=>{
     const info = classInfo(code);
-    return `<div class="tt-cell hw-class-cell"><span class="cc-dot cc-${info.color}"></span>${escapeHtml(info.label)}</div>` +
+    return `<div class="tt-cell hw-class-cell ${classOnTimetable(code)?'':'stale'}"><span class="cc-dot cc-${info.color}"></span><span class="hw-class-name">${escapeHtml(info.label)}</span><button type="button" class="class-tab-del" data-hide-class="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(info.label)} from class lists" title="Remove from lists">${ICONS.close}</button></div>` +
       DAYS.map((d,i)=>{
         const iso = toISO(addDays(monday,i));
         const slot = getHomework(w, code, d);
@@ -1727,6 +1800,7 @@ function renderHomework(){
     </div>
     ${note? `<p class="empty-note" style="margin:-10px 0 14px;">${note}</p>` : ''}
     ${summary? `<p class="hw-summary" id="hw-summary">${summary}</p>` : ''}
+    ${staleNotice()}
     <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
   `;
 }
@@ -2135,7 +2209,8 @@ function renderCalendar(){
 const HALF_TERMS = ['Autumn 1','Autumn 2','Spring 1','Spring 2','Summer 1','Summer 2'];
 
 function renderPlans(){
-  const codes = allClassCodes().sort((a,b)=> classInfo(a).label.localeCompare(classInfo(b).label));
+  const codes = sortedClassCodes();
+  if(!codes.length) return `<div class="page-head"><p class="page-eyebrow">Long-Term Plans</p><h1 class="page-title">Curriculum overview by class</h1></div><p class="empty-note">No classes to show. You can bring back removed classes in Settings.</p>`;
   if(!state.planClass || !codes.includes(state.planClass)) state.planClass = codes[0];
   const active = state.planClass;
   const info = classInfo(active);
@@ -2146,9 +2221,7 @@ function renderPlans(){
       <p class="page-eyebrow">Long-Term Plans</p>
       <h1 class="page-title">Curriculum overview by class</h1>
     </div>
-    <div class="class-tabs">
-      ${codes.map(c=>`<button class="class-tab ${c===active?'active':''}" data-class="${c}"><span class="cc-dot cc-${classInfo(c).color}"></span> ${escapeHtml(classInfo(c).label)}</button>`).join('')}
-    </div>
+    ${renderClassTabs(codes, active)}
     <div class="card" style="padding:22px 24px;margin-bottom:20px;">
       <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;">
         <div style="flex:1;min-width:200px;">
@@ -2182,6 +2255,12 @@ function renderSettings(){
       <p>Changes the colours across the whole planner. It's saved with your data, so it follows you to other devices.</p>
       ${renderThemePicker()}
     </div>
+
+    ${store.hiddenClasses.length? `<div class="card settings-block">
+      <h3>Removed classes</h3>
+      <p>These are hidden from Classes, Homework Timetable and Long-Term Plans. Their notes and plans are still saved.</p>
+      <div class="restore-list">${store.hiddenClasses.map(c=>`<span class="restore-item"><span class="cc-dot cc-${classInfo(c).color}"></span>${escapeHtml(classInfo(c).label)} <button type="button" class="btn btn-sm" data-restore-class="${escapeHtml(c)}">Restore</button></span>`).join('')}</div>
+    </div>` : ''}
 
     <div class="card settings-block">
       <h3>Google Drive sync</h3>
