@@ -1037,7 +1037,8 @@ function addDays(d, n){ const nd=new Date(d); nd.setDate(nd.getDate()+n); return
 function getMonday(d){
   const nd = new Date(d);
   const day = nd.getDay(); // 0 Sun .. 6 Sat
-  const diff = (day===0? -6 : 1-day);
+  // The week rolls over on Saturday: Sat and Sun belong to the coming Mon–Fri.
+  const diff = day===6 ? 2 : day===0 ? 1 : 1-day;
   nd.setDate(nd.getDate()+diff);
   nd.setHours(0,0,0,0);
   return nd;
@@ -1879,12 +1880,16 @@ function hwSetOn(iso, code){
   const d = fromISO(iso), day = dayKeyOf(d);
   return !!(day && isTeachingDay(iso) && getHomework(weekTypeFor(d), code, day));
 }
-// Dates of homework for this class that should be collected on iso.
+// Dates of homework for this class that should be collected on iso (only if it was ticked On SMHW).
 function collectionsOn(iso, code){
   const out = [], target = fromISO(iso);
   for(let back=35; back>=7; back--){
     const setISO = toISO(addDays(target, -back));
-    if(hwSetOn(setISO, code) && collectDateFor(setISO, code)===iso) out.push(setISO);
+    if(!hwSetOn(setISO, code)) continue;
+    // Only remind to collect homework that was actually ticked as set (On SMHW).
+    const w = getHwWork(setISO, code);
+    if(!w.smhw && !w.collected) continue;
+    if(collectDateFor(setISO, code)===iso) out.push(setISO);
   }
   return out;
 }
