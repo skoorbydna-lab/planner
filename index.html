@@ -1024,8 +1024,8 @@ function persist(){
 }
 // When signed in to Google, push changes to Drive a few seconds after the last edit.
 const scheduleDriveUpload = debounce(()=>{
-  if(typeof driveSignedIn!=='undefined' && driveSignedIn && !driveBusy && !needsSetup()) driveSyncNow(true);
-}, 4000);
+  if(typeof driveSignedIn!=='undefined' && driveSignedIn && !needsSetup()) driveSyncNow(true);
+}, 3000);
 
 /* ======================================================================
    UTILITIES
@@ -3305,10 +3305,14 @@ const DRIVE_LEGACY_FILENAME = 'andy-brooks-planner-data.json'; // files created 
 
 let gTokenClient = null;
 let gAccessToken = null;
+let gTokenExpiry = 0;          // when the current access token stops working (Google tokens last ~1 hour)
+let gTokenWaiters = [];        // syncs waiting for a refreshed token
 let driveFileId = localStorage.getItem('plannerDriveFileId') || null;
 let driveSignedIn = false;
 let driveEmail = localStorage.getItem('plannerDriveEmail') || '';
 let driveBusy = false;
+let driveSyncAgain = false;    // an edit arrived while a sync was running, so run another straight after
+const DRIVE_BASE_KEY = 'plannerDriveBase'; // copy of the Drive file as of this device's last sync, for merging
 
 function waitForGoogleIdentity(cb, tries){
   tries = tries||0;
@@ -3323,22 +3327,48 @@ function driveInit(){
       client_id: GOOGLE_CLIENT_ID,
       scope: DRIVE_SCOPE,
       callback: (resp)=>{
-        driveBusy = false;
+        const waiters = gTokenWaiters; gTokenWaiters = [];
+        if(!waiters.length) driveBusy = false; // a sync waiting on this refresh still owns driveBusy
         if(resp.error){
-          driveSignedIn = false;
+          gAccessToken = null; gTokenExpiry = 0;
+          if(!waiters.length) driveSignedIn = false;
+          waiters.forEach(fn=>fn(false));
           if(state.route==='settings' || state.route==='setup') render();
           return;
         }
         gAccessToken = resp.access_token;
+        gTokenExpiry = Date.now() + ((Number(resp.expires_in)||3600) - 120) * 1000;
         driveSignedIn = true;
         localStorage.setItem('plannerDriveConnected','1');
+        if(waiters.length){ waiters.forEach(fn=>fn(true)); return; } // a silent refresh mid-sync
         fetchDriveProfile().then(()=>driveSyncNow(true));
+      },
+      error_callback: ()=>{
+        // Pop-up blocked or closed: let any waiting sync give up rather than hang.
+        const waiters = gTokenWaiters; gTokenWaiters = [];
+        if(!waiters.length) driveBusy = false;
+        waiters.forEach(fn=>fn(false));
+        if(state.route==='settings' || state.route==='setup') render();
       }
     });
     if(localStorage.getItem('plannerDriveConnected')==='1'){
+      driveSignedIn = true; // remembered; the token arrives in the callback
       driveBusy = true;
       gTokenClient.requestAccessToken({prompt:''});
     }
+  });
+}
+// Make sure we hold a working token, quietly renewing it when the hour is up.
+function ensureDriveToken(){
+  if(gAccessToken && Date.now() < gTokenExpiry) return Promise.resolve(true);
+  if(!gTokenClient) return Promise.resolve(false);
+  return new Promise(res=>{
+    gTokenWaiters.push(res);
+    if(gTokenWaiters.length===1){
+      try{ gTokenClient.requestAccessToken({prompt:''}); }
+      catch(e){ const w = gTokenWaiters; gTokenWaiters = []; w.forEach(fn=>fn(false)); }
+    }
+    setTimeout(()=>{ const i = gTokenWaiters.indexOf(res); if(i>=0){ gTokenWaiters.splice(i,1); res(false); } }, 30000);
   });
 }
 function driveSignIn(){
@@ -3405,43 +3435,101 @@ async function driveUpload(content){
     headers: driveHeaders({'Content-Type':'application/json'}),
     body: content
   });
-  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); await driveCreateFile(content); }
+  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); await driveCreateFile(content); return; }
+  if(res.status===401) throw new Error('auth');
+  if(!res.ok) throw new Error('Drive upload failed: '+res.status);
 }
 async function driveDownload(){
   if(!driveFileId){
     const found = await driveFindFile();
     if(!found) return null;
   }
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {headers:driveHeaders()});
-  if(!res.ok) return null;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {headers:driveHeaders(), cache:'no-store'});
+  if(res.status===401) throw new Error('auth');
+  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); return null; }
+  if(!res.ok) throw new Error('Drive download failed: '+res.status);
   return await res.text();
 }
+
+/* ---- Merging two devices' changes ----
+   Each device remembers what the Drive file looked like when it last synced
+   (the "base"). On sync, anything changed on only one side is kept, so a to-do
+   ticked on the tablet and one added on the phone both survive. Only when the
+   very same item was changed on both does the more recent device win. */
+const NO_BASE = {};
+function syncIsObj(x){ return x!==null && typeof x==='object' && !Array.isArray(x); }
+function syncEq(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+function syncClone(x){ return x===undefined ? undefined : JSON.parse(JSON.stringify(x)); }
+function syncIsIdList(a){ return Array.isArray(a) && a.every(x=>syncIsObj(x) && x.id!==undefined); }
+function mergeValues(base, local, remote, localWins){
+  if(syncEq(local, remote)) return syncClone(local);
+  if(base!==NO_BASE){
+    if(syncEq(base, local)) return syncClone(remote);   // only the other device changed it
+    if(syncEq(base, remote)) return syncClone(local);   // only this device changed it
+  }else{
+    if(local===undefined) return syncClone(remote);     // first sync: keep anything either side has
+    if(remote===undefined) return syncClone(local);
+  }
+  if(syncIsObj(local) && syncIsObj(remote)){
+    const out = {};
+    const b = base===NO_BASE ? NO_BASE : (syncIsObj(base) ? base : {});
+    new Set([...Object.keys(local), ...Object.keys(remote)]).forEach(k=>{
+      const v = mergeValues(b===NO_BASE ? NO_BASE : b[k], local[k], remote[k], localWins);
+      if(v!==undefined) out[k] = v;
+    });
+    return out;
+  }
+  if(syncIsIdList(local) && syncIsIdList(remote)){
+    const byId = arr=>{ const m = new Map(); arr.forEach(x=>m.set(String(x.id), x)); return m; };
+    const L = byId(local), R = byId(remote);
+    const B = base===NO_BASE ? null : byId(syncIsIdList(base) ? base : []);
+    const order = [...L.keys()]; R.forEach((_,id)=>{ if(!L.has(id)) order.push(id); });
+    const out = [];
+    order.forEach(id=>{
+      const v = mergeValues(B ? B.get(id) : NO_BASE, L.get(id), R.get(id), localWins);
+      if(v!==undefined) out.push(v);
+    });
+    return out;
+  }
+  return syncClone(localWins ? local : remote);   // changed on both: newest device wins
+}
+function mergeStores(base, local, remote){
+  const localWins = (local.lastModified||0) >= (remote.lastModified||0);
+  const strip = o=>{ const c = Object.assign({}, o); delete c.lastModified; return c; };
+  const merged = mergeValues(base ? strip(base) : NO_BASE, strip(local), strip(remote), localWins);
+  merged.lastModified = Math.max(local.lastModified||0, remote.lastModified||0);
+  return normalizeStore(merged);
+}
+function storesDiffer(a, b){
+  const x = Object.assign({}, a), y = Object.assign({}, b);
+  delete x.lastModified; delete y.lastModified;
+  return !syncEq(x, y);
+}
+function userIsTyping(){
+  const el = document.activeElement;
+  return !!(el && (el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && !/^(checkbox|radio|button|submit)$/i.test(el.type)) || el.isContentEditable));
+}
+let renderAfterTyping = false;
+document.addEventListener('focusout', ()=>{
+  setTimeout(()=>{ if(renderAfterTyping && !userIsTyping()){ renderAfterTyping = false; render(); } }, 300);
+});
+
 async function driveSyncNow(silent){
-  if(!gAccessToken){ if(!silent) showToast('Not signed in to Google.'); return; }
+  if(!driveSignedIn && !gAccessToken){ if(!silent) showToast('Not signed in to Google.'); return; }
+  if(driveBusy){ driveSyncAgain = true; return; }
   driveBusy = true;
   if(state.route==='settings' || state.route==='setup') render();
   try{
-    const remoteText = await driveDownload();
-    if(remoteText){
-      const remote = JSON.parse(remoteText);
-      const remoteTime = remote.lastModified||0;
-      const localTime = store.lastModified||0;
-      if(remoteTime > localTime){
-        store = normalizeStore(remote);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-        showToast('Loaded the latest version from Google Drive');
-        render();
-      }else if(localTime > remoteTime && !needsSetup()){
-        await driveUpload(JSON.stringify(store));
-        showToast('Backed up to Google Drive');
-      }else if(!silent){
-        showToast('Already up to date');
+    for(let attempt=0; attempt<2; attempt++){
+      if(!(await ensureDriveToken())){
+        if(!silent) showToast('Google sign-in has expired — tap Sync now to reconnect.');
+        break;
       }
-    }else if(!needsSetup()){
-      await driveUpload(JSON.stringify(store));
-      showToast('Backed up to Google Drive');
-    }else if(!silent){
-      showToast('No saved planner found in this Google account yet — fill in the setup below.');
+      try{ await driveSyncOnce(silent); break; }
+      catch(err){
+        if(err && err.message==='auth' && attempt===0){ gTokenExpiry = 0; continue; } // token ran out: renew and retry
+        throw err;
+      }
     }
   }catch(err){
     console.error(err);
@@ -3449,7 +3537,68 @@ async function driveSyncNow(silent){
   }
   driveBusy = false;
   if(state.route==='settings' || state.route==='setup') render();
+  if(driveSyncAgain){ driveSyncAgain = false; setTimeout(()=>driveSyncNow(true), 500); }
 }
+async function driveSyncOnce(silent){
+  const remoteText = await driveDownload();
+  if(!remoteText){
+    if(!needsSetup()){
+      const out = JSON.stringify(store);
+      await driveUpload(out);
+      localStorage.setItem(DRIVE_BASE_KEY, out);
+      showToast('Backed up to Google Drive');
+    }else if(!silent){
+      showToast('No saved planner found in this Google account yet — fill in the setup below.');
+    }
+    return;
+  }
+  const remote = normalizeStore(JSON.parse(remoteText));
+  // A brand-new device (nothing set up here yet) simply takes what's in Drive.
+  if(needsSetup() || !(store.lastModified>0)){
+    store = remote;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(DRIVE_BASE_KEY, remoteText);
+    showToast('Loaded your planner from Google Drive');
+    render();
+    return;
+  }
+  let base = null;
+  try{ const t = localStorage.getItem(DRIVE_BASE_KEY); if(t) base = normalizeStore(JSON.parse(t)); }catch(e){ base = null; }
+  const merged = mergeStores(base, store, remote);
+  const localChanged = storesDiffer(merged, store);
+  const remoteChanged = storesDiffer(merged, remote);
+  if(remoteChanged) merged.lastModified = Date.now();
+  store = merged;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  if(remoteChanged){
+    const out = JSON.stringify(store);
+    try{
+      await driveUpload(out);
+      localStorage.setItem(DRIVE_BASE_KEY, out);
+    }catch(err){
+      localStorage.setItem(DRIVE_BASE_KEY, remoteText); // Drive still holds the old copy
+      throw err;
+    }
+  }else{
+    localStorage.setItem(DRIVE_BASE_KEY, remoteText);
+  }
+  if(localChanged){
+    showToast('Synced changes from your other device');
+    if(userIsTyping()) renderAfterTyping = true; else render();
+  }else if(remoteChanged){
+    showToast('Backed up to Google Drive');
+  }else if(!silent){
+    showToast('Already up to date');
+  }
+}
+// Check Drive whenever the planner comes back on screen, and every couple of minutes while it's open.
+const driveCheckSoon = debounce(()=>{
+  if(driveSignedIn && document.visibilityState==='visible' && !needsSetup()) driveSyncNow(true);
+}, 800);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') driveCheckSoon(); });
+window.addEventListener('focus', driveCheckSoon);
+window.addEventListener('online', driveCheckSoon);
+setInterval(driveCheckSoon, 2*60*1000);
 
 /* ======================================================================
    INIT
