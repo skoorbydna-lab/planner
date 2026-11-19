@@ -46,6 +46,13 @@
   --sidebar-active:#31513B;
   --shadow:0 1px 2px rgba(35,44,51,0.06), 0 4px 14px rgba(35,44,51,0.06);
   --radius:10px;
+  --field:#fff;            /* input backgrounds */
+  --fixed-row:#F1ECDF;     /* break/lunch rows in the timetable */
+  --on-accent:#fff;        /* text on accent-coloured buttons */
+  --inverse-bg:var(--ink); /* active class tab, toast */
+  --inverse-ink:#fff;
+  --chip-line:#E4D3A4;
+  --chip-holiday-line:#DDBBB2;
   --font-display:'Fraunces', Georgia, serif;
   --font-body:'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -75,6 +82,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:fo
 }
 .sidebar{
   width:224px;
+  will-change:transform;
   flex-shrink:0;
   background:var(--sidebar-bg);
   color:var(--sidebar-ink);
@@ -151,7 +159,22 @@ body.nav-hidden .nav-reveal{display:flex;}
   max-width:1180px;
   transition:margin-left .28s ease;
 }
-body.nav-hidden .main{ margin-left:0; }
+body.nav-hidden .main{ margin-left:0; padding-left:76px; }
+.nav-collapse{
+  position:absolute;
+  top:18px; right:10px;
+  width:30px;height:30px;
+  border-radius:8px;
+  border:none;
+  background:none;
+  color:var(--sidebar-ink);
+  opacity:.7;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.nav-collapse:hover{opacity:1;background:rgba(255,255,255,0.08);}
+.nav-collapse svg{width:17px;height:17px;}
+.sidebar-brand{padding-right:40px;}
 .page-head{
   margin-bottom:26px;
 }
@@ -184,7 +207,7 @@ body.nav-hidden .main{ margin-left:0; }
     overflow:hidden;
     transform:none !important; /* never auto-hide on mobile — avoids fighting with the browser's own collapsing address bar */
   }
-  .nav-reveal{display:none !important;}
+  .nav-reveal, .nav-collapse{display:none !important;}
   .sidebar-brand,.sidebar-sub,.sidebar-foot{display:none;}
   #nav-items{
     display:flex;
@@ -197,7 +220,7 @@ body.nav-hidden .main{ margin-left:0; }
     min-width:0;
   }
   .nav-item{width:auto;white-space:nowrap;flex-shrink:0;}
-  .main{margin-left:0;margin-top:0;padding:20px 16px 70px;}
+  .main, body.nav-hidden .main{margin-left:0;margin-top:0;padding:20px 16px 70px;}
   .page-title{font-size:24px;}
 }
 
@@ -225,7 +248,7 @@ body.nav-hidden .main{ margin-left:0; }
 .btn-primary{
   background:var(--forest);
   border-color:var(--forest);
-  color:#fff;
+  color:var(--on-accent);
 }
 .btn-primary:hover{background:var(--forest-light);border-color:var(--forest-light);}
 .btn-ghost{background:transparent;border-color:transparent;}
@@ -247,7 +270,7 @@ textarea, .input{
   padding:9px 11px;
   font-size:14px;
   color:var(--ink);
-  background:#fff;
+  background:var(--field);
   resize:vertical;
   line-height:1.5;
 }
@@ -396,6 +419,181 @@ label.field-label{
 .retirement-stat .lbl{display:block;font-size:10.5px;color:#D7E0D8;margin-top:3px;text-transform:uppercase;letter-spacing:.03em;}
 .retirement-card .empty-note{color:#C3CFC4;}
 
+/* ============================= THEMES ============================= */
+:root[data-theme="ocean"]{
+  --paper:#EEF2F4;--paper-dim:#E0E7EB;--paper-card:#FBFCFD;--line:#C9D4DB;--line-soft:#DCE4E9;
+  --ink:#1F2B35;--ink-soft:#52626F;--ink-faint:#83919C;
+  --forest:#2D5F7F;--forest-light:#3F7698;--forest-wash:#DFEAF1;--gold-wash:#E6EEF3;
+  --sidebar-bg:#18242E;--sidebar-active:#2D5F7F;--fixed-row:#E6ECEF;--chip-line:#C3D3DD;
+}
+:root[data-theme="heather"]{
+  --paper:#F4EFF1;--paper-dim:#EAE1E5;--paper-card:#FDFBFC;--line:#D9CBD1;--line-soft:#E7DDE1;
+  --ink:#2E2530;--ink-soft:#655A66;--ink-faint:#958A95;
+  --forest:#6B4468;--forest-light:#82587F;--forest-wash:#EEE3EC;--gold-wash:#F2E9EE;
+  --sidebar-bg:#271E27;--sidebar-active:#6B4468;--fixed-row:#EDE5E8;--chip-line:#DCC8D3;
+}
+:root[data-theme="clean"]{
+  --paper:#F4F5F6;--paper-dim:#E9EBED;--paper-card:#FFFFFF;--line:#D3D7DB;--line-soft:#E4E7EA;
+  --ink:#1E2328;--ink-soft:#575F67;--ink-faint:#8A9198;
+  --forest:#1F6E68;--forest-light:#2A857E;--forest-wash:#DDEEEC;--gold-wash:#EEF1F2;
+  --sidebar-bg:#FFFFFF;--sidebar-ink:#3B434A;--sidebar-active:#1F6E68;--fixed-row:#EEF0F2;--chip-line:#D3DCDF;
+}
+:root[data-theme="clean"] .sidebar{border-right:1px solid var(--line-soft);}
+:root[data-theme="clean"] .sidebar-brand{color:var(--ink);}
+:root[data-theme="clean"] .sidebar-sub, :root[data-theme="clean"] .sidebar-foot{color:var(--ink-faint);}
+:root[data-theme="clean"] .nav-item:hover{background:var(--paper-dim);}
+@media (max-width:860px){:root[data-theme="clean"] .sidebar{border-right:none;border-bottom:1px solid var(--line-soft);}}
+:root[data-theme="night"]{
+  color-scheme:dark;
+  --paper:#171C20;--paper-dim:#21282D;--paper-card:#1D2328;--line:#343D44;--line-soft:#2A3238;
+  --ink:#E4E7E2;--ink-soft:#A8B0B6;--ink-faint:#79838A;
+  --forest:#4F8462;--forest-light:#6AA07D;--forest-wash:#22332A;
+  --gold:#D3B26A;--gold-wash:#352E1E;--brick:#DB8C7E;--brick-wash:#3A2522;
+  --slate:#94AECB;--slate-wash:#232D38;--teal:#7CC2BD;--teal-wash:#1E3332;
+  --navy:#8FAED0;--navy-wash:#212C39;--plum:#C79BC3;--plum-wash:#33243A;
+  --rust:#E19A6E;--rust-wash:#3A2A1F;--olive:#C2BE78;--olive-wash:#2F2E1E;
+  --clay:#DC9A81;--clay-wash:#382821;--berry:#D092AB;--berry-wash:#36222C;
+  --sidebar-bg:#101417;--sidebar-active:#4F8462;
+  --field:#161B1F;--fixed-row:#1A2025;--inverse-bg:#E4E7E2;--inverse-ink:#171C20;
+  --chip-line:#4A4130;--chip-holiday-line:#5A3A35;
+  --shadow:0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
+}
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.theme-opt{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--paper-card);cursor:pointer;text-align:left;font:inherit;color:var(--ink);}
+.theme-opt:hover{border-color:var(--ink-faint);}
+.theme-opt[aria-pressed="true"]{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest-wash);}
+.theme-swatch{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid rgba(0,0,0,0.08);}
+.theme-swatch span{flex:1;}
+.theme-swatch span:first-child{flex:0 0 30%;}
+.theme-name{font-size:13px;font-weight:600;}
+
+/* ============================= CLASSES ============================= */
+.cls-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--paper-card);}
+.seg button{border:none;background:transparent;padding:6px 12px;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer;}
+.seg button + button{border-left:1px solid var(--line);}
+.seg button[aria-pressed="true"]{background:var(--forest);color:var(--on-accent);}
+.cls-summary{font-size:13px;color:var(--ink-soft);}
+.cls-group{margin-bottom:22px;}
+.cls-group h2{font-family:var(--font-display);font-weight:500;font-size:18px;margin:0 0 10px;}
+.cls-week{font-size:12px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
+.cls-lesson{display:flex;gap:14px;padding:12px 14px;border:1px solid var(--line-soft);border-left-width:4px;border-radius:8px;background:var(--paper-card);margin-bottom:8px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--ink);}
+.cls-lesson:hover{border-color:var(--ink-faint);}
+.cls-lesson.is-today{box-shadow:0 0 0 2px var(--gold-wash);}
+.cls-when{width:112px;flex-shrink:0;font-size:12px;color:var(--ink-soft);line-height:1.45;}
+.cls-when strong{display:block;font-size:13.5px;color:var(--ink);}
+.cls-body{flex:1;min-width:0;}
+.cls-title{font-weight:600;font-size:14px;margin-bottom:2px;}
+.cls-title.empty{font-weight:400;font-style:italic;color:var(--ink-faint);}
+.cls-notes{font-size:12.5px;color:var(--ink-soft);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.cls-hw{font-size:12px;color:var(--forest);margin-top:4px;}
+@media (max-width:600px){.cls-lesson{flex-direction:column;gap:6px;}.cls-when{width:auto;}}
+
+/* ============================= HOMEWORK TIMETABLE ============================= */
+.tt-grid.hw-grid{grid-template-columns:150px repeat(5, minmax(130px,1fr));}
+@media (max-width:860px){.tt-grid.hw-grid{grid-template-columns:110px repeat(5, minmax(140px,1fr));min-width:810px;}}
+.hw-cell{font-size:12.5px;line-height:1.4;white-space:pre-line;}
+.hw-cell.empty{color:var(--ink-faint);}
+.hw-class-cell{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink);background:var(--paper-dim);}
+.hw-slot{display:flex;flex-direction:column;gap:5px;}
+.hw-slot.hw-done{background:var(--forest-wash);}
+.hw-slot-label{font-size:11.5px;font-weight:600;color:var(--ink-soft);}
+.hw-slot textarea.hw-content{min-height:48px;font-size:12.5px;padding:5px 7px;line-height:1.4;}
+.hw-tick{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);cursor:pointer;}
+.hw-tick input{width:15px;height:15px;margin:0;accent-color:var(--forest);cursor:pointer;}
+.hw-off{background:var(--fixed-row);}
+.hw-summary{font-size:13px;color:var(--ink-soft);margin:-6px 0 12px;}
+.hw-edit textarea{width:100%;min-height:52px;font-size:12.5px;padding:6px 7px;resize:vertical;}
+
+/* ============================= HOMEWORK ON TIMETABLE ============================= */
+.tt-hw{display:flex;flex-direction:column;gap:2px;margin-top:3px;padding:3px 6px;border-radius:5px;background:var(--gold-wash);border:1px solid var(--chip-line);}
+.tt-hw.done{background:var(--forest-wash);border-color:transparent;}
+.tt-hw-label{font-size:10.5px;font-weight:600;color:var(--ink);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.tt-hw-ticks{display:flex;gap:6px;font-size:9.5px;color:var(--ink-faint);}
+.tt-hw-ticks span::before{content:"○ ";}
+.tt-hw-ticks span.on{color:var(--forest);font-weight:600;}
+.tt-hw-ticks span.on::before{content:"✓ ";}
+
+.hw-inline{margin:4px 0 6px;padding:7px 10px;border-radius:7px;background:var(--gold-wash);border:1px solid var(--chip-line);}
+.hw-inline.done{background:var(--forest-wash);border-color:transparent;}
+.hw-inline-head{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;}
+.hw-inline-label{font-size:12.5px;font-weight:600;color:var(--ink);margin-right:auto;}
+.hw-inline-text{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+.hw-inline-content{margin-top:6px;font-size:13px;padding:6px 8px;min-height:44px;}
+.daily-body .hw-inline{margin:0 0 12px;}
+.hw-collect{display:flex;flex-direction:column;gap:4px;margin:4px 0 6px;padding:6px 9px;border-radius:7px;background:var(--slate-wash);border:1px solid var(--line-soft);}
+.hw-collect.done{background:var(--forest-wash);border-color:transparent;}
+.hw-collect-text{font-size:12px;color:var(--ink);line-height:1.35;}
+.hw-collect-from{color:var(--ink-faint);font-size:11px;}
+.hw-slot .hw-collect{margin:4px 0 0;}
+.hw-has-collect{padding:6px;}
+.hw-has-collect .hw-collect{margin:0;}
+.daily-body .hw-collect{margin:0 0 12px;}
+@media (min-width:700px){ .period-main .hw-collect, .daily-body .hw-collect{flex-direction:row;align-items:center;justify-content:space-between;} }
+
+/* ============================= ACTIVITIES ============================= */
+.act-chip{display:block;font-size:12px;line-height:1.35;padding:5px 8px;border-radius:6px;border-left:3px solid;}
+.act-chip strong{font-weight:700;}
+.act-chip.compact{font-size:11px;padding:3px 6px;}
+.act-duty{background:var(--brick-wash);border-color:var(--brick);color:var(--brick);}
+.act-commute{background:var(--navy-wash);border-color:var(--navy);color:var(--navy);}
+.act-club{background:var(--teal-wash);border-color:var(--teal);color:var(--teal);}
+.act-meeting{background:var(--gold-wash);border-color:var(--gold);color:var(--gold);}
+.act-other{background:var(--plum-wash);border-color:var(--plum);color:var(--plum);}
+.tt-fixed-cell .act-chip + .act-chip, .period-fixed-main .act-chip + .act-chip, .daily-fixed .act-chip + .act-chip{margin-top:3px;}
+.act-editor{display:flex;flex-direction:column;gap:4px;}
+.act-editor .input{padding:4px 6px;font-size:11.5px;}
+.tt-fixed-cell{background:var(--fixed-row);min-height:30px;padding:5px 6px;}
+.period-fixed .act-chip, .daily-fixed .act-chip{margin-top:4px;}
+.period-fixed-main{flex:1;min-width:0;}
+.after-acts{margin-bottom:6px;}
+.todo-sub{font-size:11.5px;font-weight:600;color:var(--ink-faint);margin:6px 0 2px;}
+.todo-day{font-size:11px;font-weight:600;color:var(--ink-faint);flex-shrink:0;width:30px;}
+
+/* ============================= TO-DO LISTS ============================= */
+.todo-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.todo-head h3{font-family:var(--font-display);font-weight:500;font-size:16px;margin:0;}
+.todo-count{font-size:12px;color:var(--ink-faint);white-space:nowrap;}
+.todo-list{list-style:none;margin:0 0 10px;padding:0;}
+.todo-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line-soft);}
+.todo-item:last-child{border-bottom:none;}
+.todo-check{width:17px;height:17px;flex-shrink:0;accent-color:var(--forest);cursor:pointer;margin:0;}
+.todo-text{flex:1;min-width:0;border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;font:inherit;font-size:13.5px;color:var(--ink);}
+.todo-text:hover{border-color:var(--line-soft);}
+.todo-text:focus{border-color:var(--forest-light);background:var(--field);outline:none;}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--ink-faint);}
+.todo-due-wrap{position:relative;flex-shrink:0;display:inline-flex;align-items:center;border-radius:6px;}
+.todo-due-chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 6px;font-size:11.5px;color:var(--ink-faint);white-space:nowrap;}
+.todo-due-chip svg{width:14px;height:14px;}
+.todo-due-wrap:hover{background:var(--paper-dim);}
+.todo-due-wrap:hover .todo-due-chip{color:var(--ink-soft);}
+.todo-due-wrap.has-due{background:var(--paper-dim);}
+.todo-due-wrap.has-due .todo-due-chip{color:var(--ink-soft);padding-right:2px;}
+.todo-due-wrap.has-due.soon, .todo-due-wrap.has-due.today{background:var(--gold-wash);}
+.todo-due-wrap.has-due.soon .todo-due-chip, .todo-due-wrap.has-due.today .todo-due-chip, .todo-due-wrap.has-due.soon .todo-due-clear, .todo-due-wrap.has-due.today .todo-due-clear{color:var(--gold);}
+.todo-due-wrap.has-due.today .todo-due-chip{font-weight:600;}
+.todo-due-wrap.has-due.overdue{background:var(--brick-wash);}
+.todo-due-wrap.has-due.overdue .todo-due-chip, .todo-due-wrap.has-due.overdue .todo-due-clear{color:var(--brick);}
+.todo-due-wrap.has-due.overdue .todo-due-chip{font-weight:600;}
+.todo-due-wrap input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;}
+.todo-due-wrap input[type=date]::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;}
+.todo-due-clear{position:relative;z-index:1;width:20px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:0 6px 6px 0;color:var(--ink-faint);cursor:pointer;opacity:.75;}
+.todo-due-clear svg{width:9px;height:9px;}
+.todo-due-clear:hover{opacity:1;}
+.todo-item .todo-due-wrap.has-due + .todo-del{margin-left:2px;}
+.todo-add .todo-due-wrap{border:1px solid var(--line);background:var(--field);}
+.todo-add .todo-due-wrap .todo-due-chip{height:100%;min-height:32px;}
+.todo-del{flex-shrink:0;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:6px;color:var(--ink-faint);cursor:pointer;}
+.todo-del svg{width:13px;height:13px;}
+.todo-del:hover,.todo-del:focus-visible{background:var(--brick-wash);color:var(--brick);}
+.todo-add{display:flex;gap:6px;}
+.todo-add .input{padding:7px 10px;font-size:13.5px;}
+.todo-actions{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;}
+.todo-actions button{border:none;background:none;padding:2px 0;font-size:12px;color:var(--ink-soft);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.todo-actions button:hover{color:var(--ink);}
+.todo-card-wide{padding:18px 22px;margin-top:20px;max-width:620px;}
+.todo-card-daily{padding:18px 22px;margin-bottom:18px;}
+
 /* ============================= TIMETABLE GRID ============================= */
 .week-nav{
   display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;
@@ -417,6 +615,9 @@ label.field-label{
   min-height:58px;
 }
 .tt-grid > .tt-cell:nth-child(6n){border-right:none;}
+/* Weekly grid: doubles span two rows, so cells can't be counted; every cell keeps its right border instead */
+.tt-grid.wk-grid{border-right:none;}
+.tt-grid.wk-grid > .tt-cell{border-right:1px solid var(--line-soft);}
 .tt-head{
   background:var(--paper-dim);
   font-size:12px;font-weight:600;
@@ -432,7 +633,7 @@ label.field-label{
   display:flex;flex-direction:column;justify-content:center;
 }
 .tt-time-cell strong{font-size:12px;color:var(--ink);}
-.tt-fixed-row .tt-cell{min-height:26px;background:#F1ECDF;color:var(--ink-faint);font-size:11px;display:flex;align-items:center;}
+.tt-fixed-row .tt-cell{min-height:26px;background:var(--fixed-row);color:var(--ink-faint);font-size:11px;display:flex;align-items:center;}
 .tt-lesson-cell{
   cursor:pointer;
   display:flex;flex-direction:column;gap:2px;
@@ -445,14 +646,14 @@ label.field-label{
 .tt-lesson-cell.today-col{background:var(--gold-wash);}
 .agenda-chip{
   background:var(--gold-wash);
-  border:1px solid #E4D3A4;
+  border:1px solid var(--chip-line);
   border-radius:7px;
   padding:6px 8px;
   margin-bottom:6px;
 }
 .agenda-chip .agenda-title{font-size:10.5px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:3px;}
 .agenda-chip ul{margin:0;padding-left:14px;font-size:11px;line-height:1.55;color:var(--ink-soft);}
-.agenda-chip.agenda-holiday{background:var(--brick-wash);border-color:#DDBBB2;}
+.agenda-chip.agenda-holiday{background:var(--brick-wash);border-color:var(--chip-holiday-line);}
 .agenda-chip.agenda-holiday .agenda-title{color:var(--brick);}
 .daily-agenda .agenda-title{font-size:11.5px;}
 .daily-agenda ul{font-size:12.5px;}
@@ -527,7 +728,24 @@ label.field-label{
   padding:7px 13px;border-radius:20px;border:1px solid var(--line);
   background:var(--paper-card);font-size:13px;font-weight:500;cursor:pointer;
 }
-.class-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.class-tab.active{background:var(--inverse-bg);color:var(--inverse-ink);border-color:var(--inverse-bg);}
+.class-tab-wrap{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:20px;background:var(--paper-card);}
+.class-tab-wrap .class-tab{border:none;background:transparent;padding-right:4px;color:var(--ink);}
+.class-tab-wrap.active{background:var(--inverse-bg);border-color:var(--inverse-bg);}
+.class-tab-wrap.active .class-tab, .class-tab-wrap.active .class-tab-del{color:var(--inverse-ink);}
+.class-tab-wrap.stale{border-style:dashed;}
+.class-tab-wrap.stale .class-tab{color:var(--ink-soft);}
+.class-tab-del{width:24px;height:24px;margin-right:4px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:50%;color:var(--ink-faint);cursor:pointer;flex-shrink:0;}
+.class-tab-del svg{width:11px;height:11px;}
+.class-tab-del:hover,.class-tab-del:focus-visible{background:var(--brick-wash);color:var(--brick);}
+.hw-class-cell .hw-class-name{flex:1;min-width:0;}
+.hw-class-cell .class-tab-del{margin-right:-4px;}
+.hw-class-cell.stale .hw-class-name{color:var(--ink-faint);text-decoration:line-through;text-decoration-style:dashed;}
+.stale-note{font-size:12.5px;color:var(--ink-soft);margin:-10px 0 16px;}
+.link-btn{border:none;background:none;padding:0;font:inherit;color:var(--forest);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.restore-list{display:flex;flex-direction:column;gap:8px;}
+.restore-item{display:flex;align-items:center;gap:8px;font-size:13.5px;}
+.restore-item .btn{margin-left:auto;}
 .plan-half{margin-bottom:16px;}
 .plan-half .field-label{margin-bottom:6px;}
 
@@ -539,7 +757,7 @@ label.field-label{
 
 .toast{
   position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
-  background:var(--ink);color:#fff;padding:9px 18px;border-radius:20px;
+  background:var(--inverse-bg);color:var(--inverse-ink);padding:9px 18px;border-radius:20px;
   font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,0.25);z-index:200;
   opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
 }
@@ -582,6 +800,9 @@ select.input{appearance:auto;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
   </button>
   <nav class="sidebar" id="sidebar">
+    <button class="nav-collapse" id="nav-collapse" aria-label="Hide menu" title="Hide menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 6 5 12 11 18"/><polyline points="19 6 13 12 19 18"/></svg>
+    </button>
     <div class="sidebar-brand" id="brand">Weekly Planner</div>
     <div class="sidebar-sub">Weekly Planner</div>
     <div id="nav-items"></div>
@@ -755,6 +976,13 @@ function defaultStore(){
     dailyOverrides: {},    // "YYYY-MM-DD_periodKey" -> {class, room} (one-off, e.g. cover or a single room change)
     customEvents: {},      // "YYYY-MM-DD" -> array of manually-added calendar/meeting notes for that date
     afterSchool: {},       // "YYYY-MM-DD" -> text (After School slot is free-text, not tied to a class)
+    homework: {A:{}, B:{}},   // weekType -> classCode -> day -> text (the homework timetable template)
+    homeworkWork: {},         // "YYYY-MM-DD_classCode" -> {content, created, smhw, collected} for a real date
+    activities: {A:{}, B:{}},  // weekType -> day -> 'break'|'lunch'|'after' -> {type, text}: duties, commutes, clubs…
+    autoCommute: true,        // add a commute at break/lunch when moving between the main site and the Y7 & 8 site
+    hiddenClasses: [],        // class codes removed from the Classes / Homework / Long-Term Plans lists
+    theme: 'classic',         // colour theme key, see THEMES
+    todos: {week:{}, day:{}}, // week: Monday "YYYY-MM-DD" -> [{id,text,done}], day: "YYYY-MM-DD" -> [{id,text,done}]
     weekAnchor: WEEK_ANCHOR,
     weekAnchorType: WEEK_ANCHOR_TYPE,
     profile: null,         // {setupDone, kind:'andy'|'custom', name, countdown:{enabled,label,date,excludeEarly,cutoff}}
@@ -771,6 +999,19 @@ function legacyProfile(){
 function normalizeStore(obj){
   const st = Object.assign(defaultStore(), obj);
   if(!st.profile) st.profile = legacyProfile();
+  if(!st.todos || typeof st.todos!=='object') st.todos = {};
+  if(!st.todos.week) st.todos.week = {};
+  if(!st.todos.day) st.todos.day = {};
+  if(!st.homework || typeof st.homework!=='object') st.homework = {};
+  if(!st.homework.A) st.homework.A = {};
+  if(!st.homework.B) st.homework.B = {};
+  if(!st.homeworkWork || typeof st.homeworkWork!=='object') st.homeworkWork = {};
+  if(!st.activities || typeof st.activities!=='object') st.activities = {};
+  if(!st.activities.A) st.activities.A = {};
+  if(!st.activities.B) st.activities.B = {};
+  if(!Array.isArray(st.hiddenClasses)) st.hiddenClasses = [];
+  if(typeof st.autoCommute!=='boolean') st.autoCommute = true;
+  if(!st.theme) st.theme = 'classic';
   return st;
 }
 function needsSetup(){ return !store.profile || !store.profile.setupDone; }
@@ -804,8 +1045,8 @@ function persist(){
 }
 // When signed in to Google, push changes to Drive a few seconds after the last edit.
 const scheduleDriveUpload = debounce(()=>{
-  if(typeof driveSignedIn!=='undefined' && driveSignedIn && !driveBusy && !needsSetup()) driveSyncNow(true);
-}, 4000);
+  if(typeof driveSignedIn!=='undefined' && driveSignedIn && !needsSetup()) driveSyncNow(true);
+}, 3000);
 
 /* ======================================================================
    UTILITIES
@@ -817,7 +1058,8 @@ function addDays(d, n){ const nd=new Date(d); nd.setDate(nd.getDate()+n); return
 function getMonday(d){
   const nd = new Date(d);
   const day = nd.getDay(); // 0 Sun .. 6 Sat
-  const diff = (day===0? -6 : 1-day);
+  // The week rolls over on Saturday: Sat and Sun belong to the coming Mon–Fri.
+  const diff = day===6 ? 2 : day===0 ? 1 : 1-day;
   nd.setDate(nd.getDate()+diff);
   nd.setHours(0,0,0,0);
   return nd;
@@ -887,6 +1129,19 @@ function clearDailyOverride(dateISO, periodKey){
 // timetable slots that share a class/room and are both flagged `double`.
 // These helpers detect that pairing so the UI can show/edit them as one row.
 const DOUBLE_PAIRS = [['p1','p2'],['p3','p4'],['p5','p6']];
+// Two back-to-back periods with the same class code count as one double lesson.
+function isDoubleSlots(a, b){
+  return !!(a && b && a.class && a.class===b.class);
+}
+function doubleRoom(a, b){
+  return (!b.room || a.room===b.room) ? a.room : (a.room ? a.room+' / '+b.room : b.room);
+}
+// A double reads and writes its notes under the first period. If notes were written
+// under the second period before it became a double, move them across once.
+function adoptPartnerLesson(dateISO, keyA, keyB){
+  const a = lessonKey(dateISO, keyA), b = lessonKey(dateISO, keyB);
+  if(store.lessons[b] && !store.lessons[a]){ store.lessons[a] = store.lessons[b]; delete store.lessons[b]; persist(); }
+}
 function pairPartnerKey(periodKey){
   const pair = DOUBLE_PAIRS.find(([a])=>a===periodKey);
   return pair ? pair[1] : null;
@@ -901,13 +1156,14 @@ function computeDayRows(dateISO){
     if(p.key==='after'){ rows.push({type:'after', period:p}); continue; }
     const slot = getSlotForDate(dateISO, p.key);
     const partnerKey = pairPartnerKey(p.key);
-    if(partnerKey && slot && slot.double){
+    if(partnerKey && slot){
       const partnerSlot = getSlotForDate(dateISO, partnerKey);
-      if(partnerSlot && partnerSlot.double && partnerSlot.class===slot.class && partnerSlot.room===slot.room){
+      if(isDoubleSlots(slot, partnerSlot)){
         const partnerPeriod = PERIODS.find(pp=>pp.key===partnerKey);
         const label = `${p.label} & ${partnerPeriod.label.split(' ').pop()}`;
         const time = slot.time || (p.time.split('–')[0]+'–'+partnerPeriod.time.split('–')[1]);
-        rows.push({type:'double', periodA:p, periodB:partnerPeriod, slot, label, time});
+        adoptPartnerLesson(dateISO, p.key, partnerKey);
+        rows.push({type:'double', periodA:p, periodB:partnerPeriod, slot:Object.assign({}, slot, {room:doubleRoom(slot, partnerSlot)}), label, time});
         skip = true;
         continue;
       }
@@ -995,7 +1251,8 @@ function allClassCodes(){
     const sl = tt?.[w]?.[d]?.[pr.key]; if(sl && sl.class) set.add(sl.class);
     const ov = store.timetableOverrides?.[w]?.[d]?.[pr.key]; if(ov && ov.class) set.add(ov.class);
   })));
-  return Array.from(set);
+  const hidden = new Set(store.hiddenClasses||[]);
+  return Array.from(set).filter(c=>!hidden.has(c));
 }
 function weekOf(dateISO){
   return TERM_CALENDAR.find(w=>{
@@ -1063,6 +1320,8 @@ function debounce(fn, ms){
    ICONS (inline svg, stroke-based, minimal)
    ====================================================================== */
 const ICONS = {
+  classes:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.5 14.2c2.9-.3 5 1.6 5 4.8"/></svg>`,
+  homework:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3.5h6v1"/><line x1="8.5" y1="10" x2="15.5" y2="10"/><line x1="8.5" y1="13.5" x2="15.5" y2="13.5"/><line x1="8.5" y1="17" x2="12.5" y2="17"/></svg>`,
   dashboard:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><rect x="13.5" y="3.5" width="7" height="4.5" rx="1.2"/><rect x="13.5" y="10.5" width="7" height="10" rx="1.2"/><rect x="3.5" y="13" width="7" height="7.5" rx="1.2"/></svg>`,
   grid:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="17" height="16" rx="1.5"/><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"/><line x1="8.5" y1="4" x2="8.5" y2="20"/><line x1="13.7" y1="4" x2="13.7" y2="20"/></svg>`,
   day:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="1.5"/><line x1="4" y1="9.5" x2="20" y2="9.5"/><line x1="8" y1="3" x2="8" y2="6.5"/><line x1="16" y1="3" x2="16" y2="6.5"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="16.3" x2="13" y2="16.3"/></svg>`,
@@ -1082,6 +1341,8 @@ const NAV = [
   {key:'weekly',    label:'Weekly Timetable', icon:'grid'},
   {key:'daily',     label:'Daily View', icon:'day'},
   {key:'calendar',  label:'Termly Calendar', icon:'calendar'},
+  {key:'classes',   label:'Classes', icon:'classes'},
+  {key:'homework',  label:'Homework Timetable', icon:'homework'},
   {key:'plans',     label:'Long-Term Plans', icon:'book'},
   {key:'settings',  label:'Settings', icon:'settings'}
 ];
@@ -1115,6 +1376,7 @@ function renderSidebar(){
 }
 
 function applyBranding(){
+  applyTheme();
   const name = (store.profile && store.profile.name || '').trim();
   document.getElementById('brand').textContent = name || 'Weekly Planner';
   document.title = name ? name+' — Weekly Planner' : 'Weekly Lesson Planner';
@@ -1130,10 +1392,708 @@ function render(){
   else if(state.route==='weekly') main.innerHTML = renderWeekly();
   else if(state.route==='daily') main.innerHTML = renderDaily();
   else if(state.route==='calendar') main.innerHTML = renderCalendar();
+  else if(state.route==='classes') main.innerHTML = renderClasses();
+  else if(state.route==='homework') main.innerHTML = renderHomework();
   else if(state.route==='plans') main.innerHTML = renderPlans();
   else if(state.route==='settings') main.innerHTML = renderSettings();
   attachRouteHandlers();
   if(state.route==='setup') attachSetupHandlers();
+}
+
+/* ======================================================================
+   BREAK / LUNCH / AFTER-SCHOOL ACTIVITIES (duties, commutes, clubs…)
+   Set once on the A/B timetable, then shown automatically every week.
+   ====================================================================== */
+const ACTIVITY_TYPES = [
+  {key:'duty',    label:'Duty'},
+  {key:'commute', label:'Commute'},
+  {key:'club',    label:'Club'},
+  {key:'meeting', label:'Meeting'},
+  {key:'other',   label:'Other'}
+];
+const ACTIVITY_SLOTS = ['break','lunch','after'];
+function getTemplateActivity(w, day, slot){
+  return (store.activities[w] && store.activities[w][day] && store.activities[w][day][slot]) || null;
+}
+function setTemplateActivity(w, day, slot, type, text){
+  if(!store.activities[w][day]) store.activities[w][day] = {};
+  if(type) store.activities[w][day][slot] = {type, text};
+  else delete store.activities[w][day][slot];
+  if(!Object.keys(store.activities[w][day]).length) delete store.activities[w][day];
+}
+function activityFor(dateISO, slot){
+  const date = fromISO(dateISO), d = dayKeyOf(date);
+  if(!d || !isTeachingDay(dateISO)) return null;
+  return getTemplateActivity(weekTypeFor(date), d, slot);
+}
+// ---- Automatic commutes between the main site and the Y7 & 8 site ----
+function classYear(code){
+  const m = String(code||'').match(/^\s*(?:Y(?:ear)?\s*)?(\d{1,2})/i);
+  return m ? parseInt(m[1],10) : null;
+}
+function classSite(code){
+  const y = classYear(code);
+  return (y===7 || y===8) ? 'lower' : 'main';
+}
+const COMMUTE_GAPS = {
+  break: {before:['p2','p1','reg'], after:['p3','p4']},
+  lunch: {before:['p4','p3'],       after:['p5','p6']}
+};
+// Returns the site you need to get to across this break/lunch, or null if you stay put.
+function autoCommuteFor(dateISO, slot){
+  if(!store.autoCommute || !COMMUTE_GAPS[slot]) return null;
+  const date = fromISO(dateISO);
+  if(!dayKeyOf(date) || !isTeachingDay(dateISO)) return null;
+  const firstClass = keys=>{ for(const k of keys){ const sl = getSlotForDate(dateISO, k); if(sl && sl.class) return sl.class; } return null; };
+  const before = firstClass(COMMUTE_GAPS[slot].before), after = firstClass(COMMUTE_GAPS[slot].after);
+  if(!before || !after) return null;
+  const from = classSite(before), to = classSite(after);
+  if(from===to) return null;
+  return {type:'commute', text: to==='lower' ? 'To Y7 & 8 site' : 'To main site', auto:true};
+}
+// Everything to show in a break or lunch slot: the activity you set, plus any automatic commute.
+function breakActivitiesHtml(dateISO, slot, compact){
+  const manual = activityFor(dateISO, slot);
+  const auto = autoCommuteFor(dateISO, slot);
+  const list = [manual];
+  if(auto && !(manual && manual.type==='commute')) list.push(auto);
+  return list.filter(Boolean).map(a=>activityChip(a, compact)).join('');
+}
+function activityChip(act, compact){
+  if(!act) return '';
+  const t = ACTIVITY_TYPES.find(x=>x.key===act.type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length-1];
+  return `<span class="act-chip act-${t.key} ${compact?'compact':''}" ${act.auto?'title="Added automatically from your timetable"':''}><strong>${t.label}</strong>${act.text? ' '+escapeHtml(act.text):''}</span>`;
+}
+function activityEditor(w, day, slot){
+  const act = getTemplateActivity(w, day, slot) || {type:'', text:''};
+  return `<div class="act-editor" data-act-day="${day}" data-act-slot="${slot}">
+    <select class="input act-type" aria-label="Type">
+      <option value="">Nothing</option>
+      ${ACTIVITY_TYPES.map(t=>`<option value="${t.key}" ${act.type===t.key?'selected':''}>${t.label}</option>`).join('')}
+    </select>
+    <input type="text" class="input act-text" placeholder="Details, e.g. canteen" value="${escapeHtml(act.text||'')}" aria-label="Details">
+  </div>`;
+}
+
+/* ======================================================================
+   TO-DO LISTS (weekly + daily)
+   ====================================================================== */
+function todoList(scope, key){
+  return (store.todos[scope] && store.todos[scope][key]) || [];
+}
+function saveTodoList(scope, key, list){
+  if(list.length) store.todos[scope][key] = list;
+  else delete store.todos[scope][key];
+  persist();
+}
+function nextWeekdayISO(iso){
+  let d = addDays(fromISO(iso), 1);
+  while(!dayKeyOf(d)) d = addDays(d, 1);
+  return toISO(d);
+}
+function todoTitle(scope, key){
+  const today = new Date();
+  if(scope==='week'){
+    if(key===toISO(getMonday(today))) return "This week's to-dos";
+    return 'To-dos for week of '+fmtShort(fromISO(key));
+  }
+  if(key===toISO(today)) return "Today's to-dos";
+  return 'To-dos for '+fmtShort(fromISO(key));
+}
+// ---- Due dates ----
+function dueInfo(due){
+  if(!due) return null;
+  const today = toISO(new Date());
+  const d = fromISO(due);
+  const nice = d.toLocaleDateString('en-GB',{weekday:'short'})+' '+fmtShort(d);
+  if(due < today) return {cls:'overdue', text:'Overdue, '+nice};
+  if(due === today) return {cls:'today', text:'Due today'};
+  if(due === toISO(addDays(new Date(),1))) return {cls:'soon', text:'Due tomorrow'};
+  return {cls:'', text:'Due '+nice};
+}
+function dueChipHtml(due, inputClass, label){
+  const info = dueInfo(due);
+  return `<span class="todo-due-wrap ${info?'has-due '+info.cls:''}">
+    <span class="todo-due-chip" aria-hidden="true">${ICONS.calendar}${info? `<span>${info.text}</span>` : ''}</span>
+    <input type="date" class="${inputClass}" value="${due||''}" aria-label="${label}" title="${info? info.text : 'Add a due date'}">
+    ${info && inputClass==='todo-due'? `<button type="button" class="todo-due-clear" aria-label="Remove due date" title="Remove due date">${ICONS.close}</button>` : ''}
+  </span>`;
+}
+function sortByDue(list){
+  return list.slice().sort((a,b)=> (a.due||'9999') < (b.due||'9999') ? -1 : (a.due||'9999') > (b.due||'9999') ? 1 : 0);
+}
+function todoItemHtml(t, src, dayLabel){
+  return `<li class="todo-item ${t.done?'done':''}" data-id="${t.id}" ${src? `data-scope="${src.scope}" data-key="${src.key}"` : ''}>
+      ${dayLabel? `<span class="todo-day">${dayLabel}</span>` : ''}
+      <input type="checkbox" class="todo-check" ${t.done?'checked':''} aria-label="Mark as ${t.done?'not done':'done'}">
+      <input type="text" class="todo-text" value="${escapeHtml(t.text)}" aria-label="To-do">
+      ${t.done && !t.due ? '' : dueChipHtml(t.done ? null : t.due, 'todo-due', 'Due date')}
+      <button type="button" class="todo-del" aria-label="Delete to-do" title="Delete">${ICONS.close}</button>
+    </li>`;
+}
+// Every daily to-do in the week starting on mondayISO, in day order.
+function dailyTodosForWeek(mondayISO){
+  const out = [];
+  for(let i=0;i<7;i++){
+    const iso = toISO(addDays(fromISO(mondayISO), i));
+    const dow = fromISO(iso).toLocaleDateString('en-GB',{weekday:'short'});
+    todoList('day', iso).forEach(t=>out.push({t, iso, dow}));
+  }
+  return out;
+}
+function renderTodoCard(scope, key, extraClass){
+  const list = todoList(scope, key);
+  const open = list.filter(t=>!t.done);
+  const done = list.filter(t=>t.done);
+  const items = sortByDue(open).concat(done).map(t=>todoItemHtml(t)).join('');
+  const fromDays = scope==='week' ? dailyTodosForWeek(key) : [];
+  const dayItems = fromDays.map(x=>todoItemHtml(x.t, {scope:'day', key:x.iso}, x.dow)).join('');
+  const total = list.length + fromDays.length;
+  const totalDone = done.length + fromDays.filter(x=>x.t.done).length;
+  const moveLabel = scope==='week' ? 'Move unfinished to next week' : 'Move unfinished to next school day';
+  const actions = [];
+  if(open.length && list.length) actions.push(`<button type="button" data-todo-act="move">${moveLabel}</button>`);
+  if(done.length) actions.push(`<button type="button" data-todo-act="clear">Clear completed</button>`);
+  return `<div class="card ${extraClass||'side-card'} todo-card" data-scope="${scope}" data-key="${key}">
+    <div class="todo-head">
+      <h3>${todoTitle(scope, key)}</h3>
+      ${total? `<span class="todo-count">${totalDone} of ${total} done</span>` : ''}
+    </div>
+    ${list.length? `<ul class="todo-list">${items}</ul>` : ''}
+    ${fromDays.length? `<div class="todo-sub">From your daily lists</div><ul class="todo-list">${dayItems}</ul>` : ''}
+    <div class="todo-add">
+      <input type="text" class="input todo-new" placeholder="${scope==='week'?'Add something to do this week':'Add something to do'}" aria-label="New to-do">
+      ${dueChipHtml(state.todoDraftDue && state.todoDraftDue[scope+key] || null, 'todo-new-due', 'Due date for new to-do')}
+      <button type="button" class="btn btn-sm" data-todo-act="add">Add</button>
+    </div>
+    ${actions.length? `<div class="todo-actions">${actions.join('')}</div>` : ''}
+  </div>`;
+}
+// Re-render only the to-do cards on screen, so typing elsewhere on the page is never interrupted.
+function refreshTodoCards(focus){
+  document.querySelectorAll('.todo-card').forEach(card=>{
+    const {scope, key} = card.dataset;
+    const cls = ['side-card','todo-card-wide','todo-card-daily'].find(c=>card.classList.contains(c));
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderTodoCard(scope, key, cls).trim();
+    card.replaceWith(tmp.firstChild);
+  });
+  if(focus){
+    const sel = `.todo-card[data-scope="${focus.scope}"][data-key="${focus.key}"] .todo-new`;
+    const el = document.querySelector(sel);
+    if(el) el.focus();
+  }
+}
+function todoAdd(card){
+  const input = card.querySelector('.todo-new');
+  const text = input.value.trim();
+  if(!text){ input.focus(); return; }
+  const {scope, key} = card.dataset;
+  const list = todoList(scope, key).slice();
+  const due = (state.todoDraftDue && state.todoDraftDue[scope+key]) || null;
+  list.push(due ? {id:uid(), text, done:false, due} : {id:uid(), text, done:false});
+  if(state.todoDraftDue) delete state.todoDraftDue[scope+key];
+  saveTodoList(scope, key, list);
+  refreshTodoCards({scope, key});
+}
+function todoUpdate(card, id, fn, item){
+  const src = item && item.dataset.scope ? item.dataset : card.dataset;
+  const {scope, key} = src;
+  const list = todoList(scope, key).map(t=>({...t}));
+  const i = list.findIndex(t=>t.id===id);
+  if(i<0) return;
+  const keep = fn(list[i]);
+  if(keep===false) list.splice(i,1);
+  saveTodoList(scope, key, list);
+}
+function todoMoveUnfinished(card){
+  const {scope, key} = card.dataset;
+  const list = todoList(scope, key);
+  const open = list.filter(t=>!t.done);
+  if(!open.length) return;
+  const targetKey = scope==='week' ? toISO(addDays(fromISO(key),7)) : nextWeekdayISO(key);
+  store.todos[scope][targetKey] = todoList(scope, targetKey).concat(open);
+  saveTodoList(scope, key, list.filter(t=>t.done));
+  refreshTodoCards();
+  showToast(`Moved ${open.length} to ${scope==='week' ? 'week of '+fmtShort(fromISO(targetKey)) : fmtShort(fromISO(targetKey))}`);
+}
+// One set of listeners for every to-do card, on any page.
+document.addEventListener('click', e=>{
+  const card = e.target.closest('.todo-card');
+  if(!card) return;
+  const act = e.target.closest('[data-todo-act]');
+  if(act){
+    const a = act.dataset.todoAct;
+    if(a==='add') todoAdd(card);
+    if(a==='move') todoMoveUnfinished(card);
+    if(a==='clear'){
+      const {scope, key} = card.dataset;
+      saveTodoList(scope, key, todoList(scope, key).filter(t=>!t.done));
+      refreshTodoCards();
+    }
+    return;
+  }
+  const clr = e.target.closest('.todo-due-clear');
+  if(clr){
+    const it = clr.closest('.todo-item');
+    todoUpdate(card, it.dataset.id, t=>{ delete t.due; }, it);
+    refreshTodoCards();
+    return;
+  }
+  const dueInput = e.target.closest('.todo-due, .todo-new-due');
+  if(dueInput){ try{ dueInput.showPicker(); }catch(_){} return; }
+  const del = e.target.closest('.todo-del');
+  if(del){
+    const it = del.closest('.todo-item');
+    todoUpdate(card, it.dataset.id, ()=>false, it);
+    refreshTodoCards();
+  }
+});
+document.addEventListener('change', e=>{
+  const card = e.target.closest('.todo-card');
+  if(!card) return;
+  if(e.target.classList.contains('todo-new-due')){
+    state.todoDraftDue = state.todoDraftDue || {};
+    state.todoDraftDue[card.dataset.scope+card.dataset.key] = e.target.value || null;
+    const typed = card.querySelector('.todo-new').value;
+    refreshTodoCards({scope:card.dataset.scope, key:card.dataset.key});
+    const fresh = document.querySelector(`.todo-card[data-scope="${card.dataset.scope}"][data-key="${card.dataset.key}"] .todo-new`);
+    if(fresh) fresh.value = typed;
+    return;
+  }
+  const item = e.target.closest('.todo-item');
+  if(item && e.target.classList.contains('todo-due')){
+    todoUpdate(card, item.dataset.id, t=>{ if(e.target.value) t.due = e.target.value; else delete t.due; }, item);
+    refreshTodoCards();
+    return;
+  }
+  if(!item) return;
+  if(e.target.classList.contains('todo-check')){
+    todoUpdate(card, item.dataset.id, t=>{ t.done = e.target.checked; }, item);
+    refreshTodoCards();
+  }else if(e.target.classList.contains('todo-text')){
+    const text = e.target.value.trim();
+    todoUpdate(card, item.dataset.id, t=>{ if(!text) return false; t.text = text; }, item);
+    if(!text) refreshTodoCards();
+    else document.querySelectorAll(`.todo-item[data-id="${item.dataset.id}"] .todo-text`).forEach(el=>{ if(el!==e.target) el.value = text; });
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter') return;
+  const card = e.target.closest && e.target.closest('.todo-card');
+  if(!card) return;
+  if(e.target.classList.contains('todo-new')){ e.preventDefault(); todoAdd(card); }
+  else if(e.target.classList.contains('todo-text')){ e.preventDefault(); e.target.blur(); }
+});
+
+/* ======================================================================
+   COLOUR THEMES
+   ====================================================================== */
+const THEMES = [
+  {key:'classic', name:'Classic',  swatch:['#20272C','#F5F1E7','#31513B']},
+  {key:'ocean',   name:'Ocean',    swatch:['#18242E','#EEF2F4','#2D5F7F']},
+  {key:'heather', name:'Heather',  swatch:['#271E27','#F4EFF1','#6B4468']},
+  {key:'clean',   name:'Clean',    swatch:['#FFFFFF','#F4F5F6','#1F6E68']},
+  {key:'night',   name:'Night',    swatch:['#101417','#1D2328','#4F8462']}
+];
+function applyTheme(){
+  const key = THEMES.some(t=>t.key===store.theme) ? store.theme : 'classic';
+  if(key==='classic') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', key);
+}
+function renderThemePicker(){
+  const current = store.theme || 'classic';
+  return `<div class="theme-grid">${THEMES.map(t=>`
+    <button type="button" class="theme-opt" data-theme-key="${t.key}" aria-pressed="${t.key===current}">
+      <span class="theme-swatch">${t.swatch.map(c=>`<span style="background:${c}"></span>`).join('')}</span>
+      <span class="theme-name">${t.name}</span>
+    </button>`).join('')}</div>`;
+}
+
+/* ======================================================================
+   CLASSES — every lesson for one class across the school year
+   ====================================================================== */
+function sortedClassCodes(){
+  return allClassCodes().sort((a,b)=> classInfo(a).label.localeCompare(classInfo(b).label));
+}
+// Is this class anywhere on the current A/B timetable?
+function classOnTimetable(code){
+  return ['A','B'].some(w=>DAYS.some(d=>LESSON_PERIODS.some(p=>{ const sl = getSlot(w,d,p.key); return sl && sl.class===code; })));
+}
+function staleClassCodes(){ return sortedClassCodes().filter(c=>!classOnTimetable(c)); }
+function hideClass(code){
+  if(!store.hiddenClasses.includes(code)) store.hiddenClasses.push(code);
+  persist();
+}
+function renderClassTabs(codes, active){
+  return `<div class="class-tabs">
+    ${codes.map(c=>{
+      const i = classInfo(c), stale = !classOnTimetable(c);
+      return `<span class="class-tab-wrap ${c===active?'active':''} ${stale?'stale':''}">
+        <button class="class-tab ${c===active?'active':''}" data-class="${escapeHtml(c)}" ${stale?'title="Not on your timetable"':''}><span class="cc-dot cc-${i.color}"></span> ${escapeHtml(i.label)}</button>
+        <button type="button" class="class-tab-del" data-hide-class="${escapeHtml(c)}" aria-label="Remove ${escapeHtml(i.label)} from class lists" title="Remove from lists">${ICONS.close}</button>
+      </span>`;
+    }).join('')}
+  </div>${staleNotice()}`;
+}
+function staleNotice(){
+  const stale = staleClassCodes();
+  if(!stale.length) return '';
+  return `<p class="stale-note">${stale.length} class${stale.length===1?' isn\'t':'es aren\'t'} on your timetable any more (shown with a dashed outline). <button type="button" class="link-btn" data-hide-stale="1">Remove ${stale.length===1?'it':'them'}</button></p>`;
+}
+// Removing / restoring classes works the same from every tab.
+document.addEventListener('click', e=>{
+  const one = e.target.closest('[data-hide-class]');
+  if(one){
+    const code = one.dataset.hideClass, label = classInfo(code).label;
+    const warn = classOnTimetable(code) ? `\n\n${label} is still on your timetable, so it will keep showing there.` : '';
+    if(!confirm(`Remove ${label} from your class lists? Its lesson notes and plans are kept, and you can bring it back in Settings.${warn}`)) return;
+    hideClass(code);
+    showToast(`Removed ${label}`);
+    render();
+    return;
+  }
+  if(e.target.closest('[data-hide-stale]')){
+    const stale = staleClassCodes();
+    if(!confirm(`Remove ${stale.map(c=>classInfo(c).label).join(', ')} from your class lists? Their notes and plans are kept, and you can bring them back in Settings.`)) return;
+    stale.forEach(c=>{ if(!store.hiddenClasses.includes(c)) store.hiddenClasses.push(c); });
+    persist();
+    showToast(`Removed ${stale.length} class${stale.length===1?'':'es'}`);
+    render();
+    return;
+  }
+  const restore = e.target.closest('[data-restore-class]');
+  if(restore){
+    store.hiddenClasses = store.hiddenClasses.filter(c=>c!==restore.dataset.restoreClass);
+    persist();
+    showToast(`Restored ${classInfo(restore.dataset.restoreClass).label}`);
+    render();
+  }
+});
+function lessonsForClass(code){
+  const out = [];
+  let half = 0, seenTeaching = false;
+  TERM_CALENDAR.forEach(wk=>{
+    if(wk.holiday){ if(seenTeaching){ half++; seenTeaching = false; } return; }
+    const monday = fromISO(wk.wb);
+    for(let i=0;i<5;i++){
+      const iso = toISO(addDays(monday,i));
+      if(!isTeachingDay(iso)) continue;
+      seenTeaching = true;
+      computeDayRows(iso).forEach(row=>{
+        if(row.type!=='single' && row.type!=='double') return;
+        if(!row.slot || row.slot.class!==code) return;
+        const periodKey = row.type==='double' ? row.periodA.key : row.period.key;
+        out.push({
+          iso, wb:wk.wb, weekType:wk.type, half:HALF_TERMS[Math.min(half, HALF_TERMS.length-1)],
+          periodKey, label: row.type==='double' ? row.label : row.period.label,
+          time: row.type==='double' ? row.time : row.period.time,
+          room: row.slot.room, lesson: getLesson(iso, periodKey)
+        });
+      });
+    }
+  });
+  return out;
+}
+function renderClasses(){
+  const codes = sortedClassCodes();
+  if(!codes.length) return `<div class="page-head"><h1 class="page-title">Classes</h1></div><p class="empty-note">No classes to show. Add classes in Settings → Open setup, or bring back removed ones in Settings.</p>`;
+  if(!state.classesCode || !codes.includes(state.classesCode)) state.classesCode = codes[0];
+  if(!state.classesFilter) state.classesFilter = 'upcoming';
+  const code = state.classesCode, info = classInfo(code), filter = state.classesFilter;
+  const todayISO = toISO(new Date());
+  const all = lessonsForClass(code);
+  const shown = filter==='upcoming' ? all.filter(l=>l.iso>=todayISO)
+              : filter==='past' ? all.filter(l=>l.iso<todayISO).reverse()
+              : all;
+  const planned = shown.filter(l=>l.lesson.title || l.lesson.notes).length;
+
+  let body = '';
+  if(!shown.length){
+    body = `<p class="empty-note">${filter==='upcoming' ? 'No more timetabled lessons for this class this year.' : filter==='past' ? 'No lessons with this class yet this year.' : 'This class has no timetabled lessons this year.'}</p>`;
+  }else{
+    let lastHalf = null, lastWeek = null, open = false;
+    shown.forEach(l=>{
+      if(l.half!==lastHalf){
+        if(open) body += `</div>`;
+        body += `<div class="cls-group"><h2>${l.half}</h2>`;
+        open = true; lastHalf = l.half; lastWeek = null;
+      }
+      if(l.wb!==lastWeek){
+        body += `<div class="cls-week">Week beginning ${fmtShort(fromISO(l.wb))}${l.weekType? ' (Week '+l.weekType+')':''}</div>`;
+        lastWeek = l.wb;
+      }
+      const d = fromISO(l.iso);
+      const dow = d.toLocaleDateString('en-GB',{weekday:'short'});
+      body += `<button type="button" class="cls-lesson ${l.iso===todayISO?'is-today':''}" style="border-left-color:var(--${info.color})" data-date="${l.iso}" data-period="${l.periodKey}">
+        <span class="cls-when"><strong>${dow} ${fmtShort(d)}</strong>${l.label}<br>${l.time}${l.room? ', '+escapeHtml(l.room):''}</span>
+        <span class="cls-body">
+          <span class="cls-title ${l.lesson.title?'':'empty'}" style="display:block;">${l.lesson.title? escapeHtml(l.lesson.title) : 'No plan yet'}</span>
+          ${l.lesson.notes? `<span class="cls-notes" style="display:-webkit-box;">${escapeHtml(l.lesson.notes)}</span>`:''}
+          ${l.lesson.homework? `<span class="cls-hw" style="display:block;">Homework: ${escapeHtml(l.lesson.homework)}</span>`:''}
+        </span>
+      </button>`;
+    });
+    if(open) body += `</div>`;
+  }
+
+  return `
+    <div class="page-head">
+      <p class="page-eyebrow">Classes</p>
+      <h1 class="page-title">${escapeHtml(info.label)}</h1>
+    </div>
+    ${renderClassTabs(codes, code)}
+    <div class="cls-toolbar">
+      <div class="seg" role="group" aria-label="Which lessons to show">
+        ${[['upcoming','Upcoming'],['past','Past'],['all','Whole year']].map(([k,l])=>`<button type="button" data-cls-filter="${k}" aria-pressed="${k===filter}">${l}</button>`).join('')}
+      </div>
+      ${shown.length? `<span class="cls-summary">${shown.length} lesson${shown.length===1?'':'s'}, ${planned} planned</span>` : ''}
+    </div>
+    ${body}
+  `;
+}
+
+/* ======================================================================
+   HOMEWORK TIMETABLE — classes down the side, days across, A/B weeks
+   ====================================================================== */
+function getHomework(w, code, day){
+  return (store.homework[w] && store.homework[w][code] && store.homework[w][code][day]) || '';
+}
+function setHomework(w, code, day, text){
+  if(!store.homework[w][code]) store.homework[w][code] = {};
+  if(text) store.homework[w][code][day] = text;
+  else delete store.homework[w][code][day];
+  if(!Object.keys(store.homework[w][code]).length) delete store.homework[w][code];
+}
+function hwWorkKey(iso, code){ return iso+'_'+code; }
+function getHwWork(iso, code){
+  return Object.assign({content:'', created:false, smhw:false, collected:false}, store.homeworkWork[hwWorkKey(iso, code)]);
+}
+function setHwWork(iso, code, patch){
+  const k = hwWorkKey(iso, code);
+  const next = Object.assign({}, getHwWork(iso, code), patch);
+  if(!next.content && !next.created && !next.smhw && !next.collected) delete store.homeworkWork[k];
+  else store.homeworkWork[k] = next;
+}
+// The slots shown for a real week: every template entry for that week's A/B type, on teaching days.
+function hwSlotsForWeek(monday){
+  const w = weekTypeFor(monday), out = [];
+  sortedClassCodes().forEach(code=>DAYS.forEach((d,i)=>{
+    const iso = toISO(addDays(monday,i));
+    if(isTeachingDay(iso) && getHomework(w, code, d)) out.push({iso, code});
+  }));
+  return out;
+}
+// ---- Collecting homework a week after it's set ----
+function classHasLessonOn(iso, code){
+  return LESSON_PERIODS.some(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+}
+// Collect on the first lesson with that class from a week after it was set (skipping holidays).
+function collectDateFor(setISO, code){
+  const start = addDays(fromISO(setISO), 7);
+  for(let i=0;i<35;i++){
+    const iso = toISO(addDays(start, i));
+    if(isTeachingDay(iso) && classHasLessonOn(iso, code)) return iso;
+  }
+  return toISO(start);
+}
+function hwSetOn(iso, code){
+  const d = fromISO(iso), day = dayKeyOf(d);
+  return !!(day && isTeachingDay(iso) && getHomework(weekTypeFor(d), code, day));
+}
+// Dates of homework for this class that should be collected on iso (only if it was ticked On SMHW).
+function collectionsOn(iso, code){
+  const out = [], target = fromISO(iso);
+  for(let back=35; back>=7; back--){
+    const setISO = toISO(addDays(target, -back));
+    if(!hwSetOn(setISO, code)) continue;
+    // Only remind to collect homework that was actually ticked as set (On SMHW).
+    const w = getHwWork(setISO, code);
+    if(!w.smhw && !w.collected) continue;
+    if(collectDateFor(setISO, code)===iso) out.push(setISO);
+  }
+  return out;
+}
+function collectBoxHtml(setISO, code){
+  const d = fromISO(setISO);
+  const label = getHomework(weekTypeFor(d), code, dayKeyOf(d));
+  const w = getHwWork(setISO, code);
+  const dow = d.toLocaleDateString('en-GB',{weekday:'short'});
+  return `<div class="hw-collect ${w.collected?'done':''}" data-iso="${setISO}" data-class="${escapeHtml(code)}">
+    <div class="hw-collect-text"><strong>Collect:</strong> ${escapeHtml(label)}${w.content? ', '+escapeHtml(w.content):''} <span class="hw-collect-from">(set ${dow} ${fmtShort(d)})</span></div>
+    <label class="hw-tick"><input type="checkbox" data-field="collected" ${w.collected?'checked':''}> Collected</label>
+  </div>`;
+}
+// For the Dashboard / Daily View: only on the class's first lesson of the day.
+function hwCollectForLesson(iso, code, periodKey){
+  if(!code || !isTeachingDay(iso)) return '';
+  const first = LESSON_PERIODS.find(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+  if(!first || first.key!==periodKey) return '';
+  return collectionsOn(iso, code).map(setISO=>collectBoxHtml(setISO, code)).join('');
+}
+document.addEventListener('change', e=>{
+  const box = e.target.closest && e.target.closest('.hw-collect');
+  if(!box || !e.target.matches('input[type=checkbox]')) return;
+  setHwWork(box.dataset.iso, box.dataset.class, {collected: e.target.checked});
+  persist();
+  box.classList.toggle('done', e.target.checked);
+  const el = document.getElementById('hw-summary');
+  if(el && state.route==='homework') el.textContent = hwSummaryText(state.hwMonday);
+});
+function hwSummaryText(monday){
+  const slots = hwSlotsForWeek(monday);
+  const toCollect = [];
+  sortedClassCodes().forEach(code=>{ for(let i=0;i<5;i++){ const iso = toISO(addDays(monday,i)); collectionsOn(iso, code).forEach(setISO=>toCollect.push({setISO, code})); } });
+  const parts = [];
+  if(slots.length){
+    const created = slots.filter(x=>getHwWork(x.iso,x.code).created).length;
+    const smhw = slots.filter(x=>getHwWork(x.iso,x.code).smhw).length;
+    parts.push(`${slots.length} homework${slots.length===1?'':'s'} to set: ${created} created, ${smhw} on SMHW`);
+  }
+  if(toCollect.length){
+    const got = toCollect.filter(x=>getHwWork(x.setISO, x.code).collected).length;
+    parts.push(`${got} of ${toCollect.length} collected`);
+  }
+  return parts.length ? 'This week: '+parts.join('. ') : '';
+}
+// Homework due to show on a lesson: only on that class's first lesson of the day, so it never repeats.
+function hwTagForLesson(iso, code, periodKey){
+  const date = fromISO(iso), d = dayKeyOf(date);
+  if(!d || !code || !isTeachingDay(iso)) return '';
+  const label = getHomework(weekTypeFor(date), code, d);
+  if(!label) return '';
+  const first = LESSON_PERIODS.find(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+  if(!first || first.key!==periodKey) return '';
+  const w = getHwWork(iso, code);
+  const done = w.created && w.smhw;
+  const status = done ? 'Created, on SMHW' : w.created ? 'Created, not on SMHW yet' : 'Not created yet';
+  return `<span class="tt-hw ${done?'done':''}" title="Homework: ${status}">
+    <span class="tt-hw-label">Hwk: ${escapeHtml(label)}${w.content? ', '+escapeHtml(w.content) : ''}</span>
+    <span class="tt-hw-ticks"><span class="${w.created?'on':''}">Created</span><span class="${w.smhw?'on':''}">SMHW</span></span>
+  </span>`;
+}
+// Editable homework box for the Dashboard and Daily View (same data as the Homework Timetable tab).
+function hwInlineForLesson(iso, code, periodKey, withContentBox){
+  const date = fromISO(iso), d = dayKeyOf(date);
+  if(!d || !code || !isTeachingDay(iso)) return '';
+  const label = getHomework(weekTypeFor(date), code, d);
+  if(!label) return '';
+  const first = LESSON_PERIODS.find(p=>p.key!=='after' && (getSlotForDate(iso, p.key)||{}).class===code);
+  if(!first || first.key!==periodKey) return '';
+  const w = getHwWork(iso, code);
+  return `<div class="hw-inline ${w.created && w.smhw?'done':''}" data-iso="${iso}" data-class="${escapeHtml(code)}">
+    <div class="hw-inline-head"><span class="hw-inline-label">Homework: ${escapeHtml(label)}</span>
+      <label class="hw-tick"><input type="checkbox" data-field="created" ${w.created?'checked':''}> Created</label>
+      <label class="hw-tick"><input type="checkbox" data-field="smhw" ${w.smhw?'checked':''}> On SMHW</label>
+    </div>
+    ${withContentBox
+      ? `<textarea class="hw-inline-content" rows="2" placeholder="Homework details" aria-label="Homework details">${escapeHtml(w.content)}</textarea>`
+      : (w.content? `<div class="hw-inline-text">${escapeHtml(w.content)}</div>` : '')}
+  </div>`;
+}
+document.addEventListener('change', e=>{
+  const box = e.target.closest && e.target.closest('.hw-inline');
+  if(!box || !e.target.matches('input[type=checkbox]')) return;
+  setHwWork(box.dataset.iso, box.dataset.class, {[e.target.dataset.field]: e.target.checked});
+  persist();
+  const w = getHwWork(box.dataset.iso, box.dataset.class);
+  box.classList.toggle('done', w.created && w.smhw);
+});
+const persistSoon = debounce(()=>persist(), 400);
+document.addEventListener('input', e=>{
+  if(!(e.target.classList && e.target.classList.contains('hw-inline-content'))) return;
+  const box = e.target.closest('.hw-inline');
+  setHwWork(box.dataset.iso, box.dataset.class, {content: e.target.value.trim()});
+  persistSoon();
+});
+function renderHomework(){
+  const editing = !!state.editingHomework;
+  const codes = sortedClassCodes();
+  if(!state.hwMonday) state.hwMonday = getMonday(new Date());
+
+  // ---------- Edit mode: the repeating A/B template ----------
+  if(editing){
+    if(!state.hwWeek) state.hwWeek = weekTypeFor(state.hwMonday) || 'A';
+    const w = state.hwWeek;
+    const head = `<div class="tt-cell tt-head">Class</div>` + DAYS.map(d=>`<div class="tt-cell tt-head"><span class="dow">${DAY_FULL[d]}</span></div>`).join('');
+    const rows = codes.map(code=>{
+      const info = classInfo(code);
+      return `<div class="tt-cell hw-class-cell ${classOnTimetable(code)?'':'stale'}"><span class="cc-dot cc-${info.color}"></span><span class="hw-class-name">${escapeHtml(info.label)}</span><button type="button" class="class-tab-del" data-hide-class="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(info.label)} from class lists" title="Remove from lists">${ICONS.close}</button></div>` +
+        DAYS.map(d=>`<div class="tt-cell hw-edit"><textarea class="hw-input" data-class="${escapeHtml(code)}" data-day="${d}" placeholder="—" aria-label="${escapeHtml(info.label)} ${DAY_FULL[d]}">${escapeHtml(getHomework(w, code, d))}</textarea></div>`).join('');
+    }).join('');
+    return `
+      <div class="page-head">
+        <p class="page-eyebrow">Homework Timetable</p>
+        <h1 class="page-title">Editing Week ${w}</h1>
+      </div>
+      <div class="week-nav">
+        <div class="seg" role="group" aria-label="Week">
+          ${['A','B'].map(k=>`<button type="button" data-hw-week="${k}" aria-pressed="${k===w}">Week ${k}</button>`).join('')}
+        </div>
+        <span style="flex:1;"></span>
+        <button class="btn btn-sm" id="hw-copy">Copy to Week ${w==='A'?'B':'A'}</button>
+        <button class="btn btn-sm btn-primary" id="hw-edit-toggle">Done editing</button>
+      </div>
+      <p class="empty-note" style="margin:-10px 0 14px;">Write a short label wherever a class has homework, e.g. "Set" or "Sparx". Each one becomes a homework slot, with its own content box and ticks, every Week ${w}. Leave a cell blank for no homework.</p>
+      ${staleNotice()}
+      <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
+    `;
+  }
+
+  // ---------- Normal mode: a real week, with content + ticks ----------
+  const monday = state.hwMonday;
+  const w = weekTypeFor(monday);
+  const wk = weekOf(toISO(monday));
+  const todayISO = toISO(new Date());
+  const head = `<div class="tt-cell tt-head">Class</div>` + DAYS.map((d,i)=>{
+    const date = addDays(monday,i), iso = toISO(date);
+    return `<div class="tt-cell tt-head" style="${iso===todayISO?'background:var(--gold-wash);':''}"><span class="dow">${DAY_FULL[d]}</span><span class="ddate">${fmtShort(date)}</span></div>`;
+  }).join('');
+  const rows = codes.map(code=>{
+    const info = classInfo(code);
+    return `<div class="tt-cell hw-class-cell ${classOnTimetable(code)?'':'stale'}"><span class="cc-dot cc-${info.color}"></span><span class="hw-class-name">${escapeHtml(info.label)}</span><button type="button" class="class-tab-del" data-hide-class="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(info.label)} from class lists" title="Remove from lists">${ICONS.close}</button></div>` +
+      DAYS.map((d,i)=>{
+        const iso = toISO(addDays(monday,i));
+        const slot = getHomework(w, code, d);
+        const collects = isTeachingDay(iso) ? collectionsOn(iso, code).map(setISO=>collectBoxHtml(setISO, code)).join('') : '';
+        if(!slot || !isTeachingDay(iso)){
+          if(collects) return `<div class="tt-cell hw-cell hw-has-collect">${collects}</div>`;
+          return `<div class="tt-cell hw-cell ${isTeachingDay(iso)?'':'hw-off'}"></div>`;
+        }
+        const work = getHwWork(iso, code);
+        const k = escapeHtml(hwWorkKey(iso, code));
+        return `<div class="tt-cell tt-cc-${info.color} hw-slot ${work.created && work.smhw?'hw-done':''}" data-iso="${iso}" data-class="${escapeHtml(code)}">
+          <div class="hw-slot-label">${escapeHtml(slot)}</div>
+          <textarea class="hw-content" rows="2" placeholder="Homework details" aria-label="${escapeHtml(info.label)} homework, ${DAY_FULL[d]}">${escapeHtml(work.content)}</textarea>
+          <label class="hw-tick"><input type="checkbox" data-field="created" ${work.created?'checked':''}> Created</label>
+          <label class="hw-tick"><input type="checkbox" data-field="smhw" ${work.smhw?'checked':''}> On SMHW</label>
+          ${collects}
+        </div>`;
+      }).join('');
+  }).join('');
+  const hasTemplate = codes.some(c=>DAYS.some(d=>getHomework('A',c,d)||getHomework('B',c,d)));
+  const summary = hwSummaryText(monday);
+  let note = '';
+  if(!hasTemplate) note = `Nothing here yet. Tap "Edit homework timetable" to choose which classes get homework on which days.`;
+  else if(wk && wk.holiday) note = `${escapeHtml(wk.note||'Holiday')}, so there's no homework this week.`;
+  return `
+    <div class="page-head">
+      <p class="page-eyebrow">Homework Timetable</p>
+      <h1 class="page-title">Week ${w}</h1>
+    </div>
+    <div class="week-nav">
+      <button class="icon-btn" id="hw-prev" aria-label="Previous week">${ICONS.chevL}</button>
+      <span class="range">${fmtShort(monday)} – ${fmtShort(addDays(monday,4))}</span>
+      <button class="icon-btn" id="hw-next" aria-label="Next week">${ICONS.chevR}</button>
+      <button class="btn btn-sm" id="hw-today">This week</button>
+      <span style="flex:1;"></span>
+      <button class="btn btn-sm" id="hw-edit-toggle">Edit homework timetable</button>
+    </div>
+    ${note? `<p class="empty-note" style="margin:-10px 0 14px;">${note}</p>` : ''}
+    <p class="hw-summary" id="hw-summary">${summary}</p>
+    ${staleNotice()}
+    <div class="tt-scroll"><div class="tt-grid hw-grid">${head}${rows}</div></div>
+  `;
 }
 
 /* ======================================================================
@@ -1168,7 +2128,7 @@ function renderDashboard(){
     periodsHtml = computeDayRows(todayISO).map(row=>{
       if(row.type==='fixed'){
         const p = row.period;
-        return `<div class="period-fixed"><div class="period-time">${p.time}</div><div>${p.label}</div></div>`;
+        return `<div class="period-fixed"><div class="period-time">${p.time}</div><div class="period-fixed-main"><div>${p.label}</div>${breakActivitiesHtml(todayISO, p.key)}</div></div>`;
       }
       if(row.type==='after'){
         const p = row.period;
@@ -1176,6 +2136,7 @@ function renderDashboard(){
         return `<div class="period-row">
           <div class="period-time"><strong>${p.label}</strong>${p.time}</div>
           <div class="period-main">
+            ${activityFor(todayISO,'after')? `<div class="after-acts">${activityChip(activityFor(todayISO,'after'))}</div>` : ''}
             <div class="lesson-preview after-edit-trigger ${text?'':'empty'}" data-date="${todayISO}">
               ${text ? escapeHtml(text) : 'Tap to add a note for after school'}
             </div>
@@ -1197,6 +2158,7 @@ function renderDashboard(){
             ${slot? `<span class="period-room pill pill-muted">${slot.room}</span>`:''}
             ${info && info.students ? `<span class="pill pill-muted" title="Students in this class">${escapeHtml(String(info.students))} students</span>`:''}
           </div>
+          ${slot? hwInlineForLesson(todayISO, slot.class, periodKey, false) + hwCollectForLesson(todayISO, slot.class, periodKey) : ''}
           ${`<div class="lesson-preview lesson-trigger ${lesson.title?'':'empty'}" data-date="${todayISO}" data-period="${periodKey}">
             ${lesson.title ? escapeHtml(lesson.title) : (slot? 'Tap to add lesson content' : 'Free — tap to add a note')}
           </div>`}
@@ -1225,6 +2187,8 @@ function renderDashboard(){
       </div>
       <div>
         ${renderRetirementCard()}
+        ${renderTodoCard('day', todayISO)}
+        ${renderTodoCard('week', toISO(getMonday(today)))}
         <div class="card side-card">
           <h3>This week</h3>
           ${weekEventsHtml}
@@ -1296,17 +2260,24 @@ function renderWeekly(){
   const rows = PERIODS.map(p=>{
     if(p.kind==='fixed'){
       return `<div class="tt-cell tt-time-cell"><strong>${p.label}</strong>${p.time}</div>` +
-        DAYS.map(()=>`<div class="tt-cell" style="background:#F1ECDF;min-height:30px;"></div>`).join('');
+        DAYS.map((d,i)=>{
+          if(state.editingTimetable) return `<div class="tt-cell tt-fixed-cell">${activityEditor(wType, d, p.key)}</div>`;
+          return `<div class="tt-cell tt-fixed-cell">${breakActivitiesHtml(toISO(addDays(monday,i)), p.key, true)}</div>`;
+        }).join('');
     }
     const timeCell = `<div class="tt-cell tt-time-cell"><strong>${p.label}</strong>${p.time}</div>`;
     const dayCells = DAYS.map((d,i)=>{
       const date = addDays(monday,i);
       const iso = toISO(date);
       const isToday = iso===todayISO;
+      if(p.key==='after' && state.editingTimetable){
+        return `<div class="tt-cell">${activityEditor(wType, d, 'after')}</div>`;
+      }
       if(p.key==='after'){
         const text = store.afterSchool[iso]||'';
         const chip = dayAgendaChip(iso);
         return `<div class="tt-cell tt-lesson-cell ${isToday?'today-col':''}" data-after="1" data-date="${iso}">
+          ${activityChip(activityFor(iso,'after'), true)}
           ${chip}
           <span class="${text?'':'empty'}">${text? escapeHtml(text).slice(0,60) : 'Add note'}</span>
         </div>`;
@@ -1328,17 +2299,21 @@ function renderWeekly(){
         </div>`;
       }
       const info = classInfo(slot.class);
-      // If this is the second half of a merged double, read the lesson under the lead period's key
+      // Second half of a double: the first half's cell already spans this row.
       const asSecondOf = DOUBLE_PAIRS.find(([a,b])=>b===p.key);
-      let lessonKeyToUse = p.key;
-      if(asSecondOf){
-        const leadSlot = getSlotForDate(iso, asSecondOf[0]);
-        if(leadSlot && leadSlot.double && slot.double && leadSlot.class===slot.class && leadSlot.room===slot.room) lessonKeyToUse = asSecondOf[0];
-      }
-      const lesson = getLesson(iso, lessonKeyToUse);
-      return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" data-lesson="1" data-date="${iso}" data-period="${p.key}">
+      if(asSecondOf && isDoubleSlots(getSlotForDate(iso, asSecondOf[0]), slot)) return '';
+      const partnerKey = pairPartnerKey(p.key);
+      const partnerSlot = partnerKey ? getSlotForDate(iso, partnerKey) : null;
+      const isDbl = isDoubleSlots(slot, partnerSlot);
+      if(isDbl) adoptPartnerLesson(iso, p.key, partnerKey);
+      const partnerPeriod = isDbl ? PERIODS.find(pp=>pp.key===partnerKey) : null;
+      const room = isDbl ? doubleRoom(slot, partnerSlot) : slot.room;
+      const time = isDbl ? (slot.time || p.time.split('–')[0]+'–'+partnerPeriod.time.split('–')[1]) : slot.time;
+      const lesson = getLesson(iso, p.key);
+      return `<div class="tt-cell tt-lesson-cell tt-cc-${info.color} ${isToday?'today-col':''}" ${isDbl?'style="grid-row:span 2;"':''} data-lesson="1" data-date="${iso}" data-period="${p.key}">
         <span class="cname">${escapeHtml(info.label)}${overridden?' <span class="pill pill-gold" title="Changed for this date">•</span>':''}</span>
-        <span class="croom">${slot.room}${slot.time?' · '+slot.time:''}</span>
+        <span class="croom">${escapeHtml(room||'')}${time?' · '+time:''}${isDbl?' · Double':''}</span>
+        ${hwTagForLesson(iso, slot.class, p.key)}
         ${lesson.title? `<span class="cnote">${escapeHtml(lesson.title)}</span>`:''}
       </div>`;
     }).join('');
@@ -1360,10 +2335,11 @@ function renderWeekly(){
         ${state.editingTimetable? 'Done editing' : 'Edit timetable'}
       </button>
     </div>
-    ${state.editingTimetable? `<p class="empty-note" style="margin:-10px 0 14px;">Editing Week ${wType} — changes apply to every Week ${wType} ${DAYS.map(d=>DAY_FULL[d]).join('/')} going forward. Leave a field blank for a free period.</p>` : ''}
+    ${state.editingTimetable? `<p class="empty-note" style="margin:-10px 0 14px;">Editing Week ${wType} — changes apply to every Week ${wType} ${DAYS.map(d=>DAY_FULL[d]).join('/')} going forward. Leave a field blank for a free period. Use Break, Lunch and After School to add duties, commutes and clubs; they'll show every Week ${wType} automatically.</p>` : ''}
     <div class="tt-scroll">
-      <div class="tt-grid">${headRow}${rows}</div>
+      <div class="tt-grid wk-grid">${headRow}${rows}</div>
     </div>
+    ${renderTodoCard('week', toISO(monday), 'todo-card-wide')}
   `;
 }
 
@@ -1383,7 +2359,7 @@ function renderDaily(){
     body = `<div class="card" style="padding:6px 22px;">` + computeDayRows(iso).map(row=>{
       if(row.type==='fixed'){
         const p = row.period;
-        return `<div class="daily-fixed">${p.label} · ${p.time}</div>`;
+        return `<div class="daily-fixed">${p.label} · ${p.time}${breakActivitiesHtml(iso, p.key)}</div>`;
       }
       if(row.type==='after'){
         const p = row.period;
@@ -1392,6 +2368,7 @@ function renderDaily(){
         return `<div class="daily-period">
           <div class="daily-time-col"><div class="lbl">${p.label}</div><div class="tm">${p.time}</div></div>
           <div class="daily-body">
+            ${activityFor(iso,'after')? `<div class="after-acts">${activityChip(activityFor(iso,'after'))}</div>` : ''}
             ${chip? `<div class="daily-agenda">${chip}</div>` : ''}
             <textarea class="after-input" data-date="${iso}" rows="2" placeholder="Clubs, meetings, planning, detentions…">${escapeHtml(text)}</textarea>
           </div>
@@ -1415,15 +2392,13 @@ function renderDaily(){
             ${info? `<span class="pill pill-${info.color}">${escapeHtml(info.label)}</span>`:''}
             ${overridden? `<a href="#" class="slot-reset" data-date="${iso}" data-period="${periodKey}" data-partner="${partnerKey}" style="font-size:11.5px;color:var(--ink-soft);">reset</a>` : ''}
           </div>
+          ${slot? hwInlineForLesson(iso, slot.class, periodKey, true) + hwCollectForLesson(iso, slot.class, periodKey) : ''}
           <div class="daily-fields">
             <div class="full"><label class="field-label">Lesson focus / title</label>
               <input class="input lesson-field" data-field="title" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.title)}" placeholder="e.g. Integration by substitution">
             </div>
             <div class="full"><label class="field-label">Notes / activities</label>
               <textarea class="lesson-field" data-field="notes" data-date="${iso}" data-period="${periodKey}" rows="3" placeholder="Key activities, resources, differentiation…">${escapeHtml(lesson.notes)}</textarea>
-            </div>
-            <div class="full"><label class="field-label">Homework / follow-up</label>
-              <input class="input lesson-field" data-field="homework" data-date="${iso}" data-period="${periodKey}" value="${escapeHtml(lesson.homework)}" placeholder="Set, due date…">
             </div>
           </div>
         </div>
@@ -1442,6 +2417,7 @@ function renderDaily(){
       <button class="icon-btn" id="day-next">${ICONS.chevR}</button>
       <button class="btn btn-sm" id="day-today">Today</button>
     </div>
+    ${renderTodoCard('day', iso, 'todo-card-daily')}
     ${body}
   `;
 }
@@ -1527,7 +2503,8 @@ function renderCalendar(){
 const HALF_TERMS = ['Autumn 1','Autumn 2','Spring 1','Spring 2','Summer 1','Summer 2'];
 
 function renderPlans(){
-  const codes = allClassCodes().sort((a,b)=> classInfo(a).label.localeCompare(classInfo(b).label));
+  const codes = sortedClassCodes();
+  if(!codes.length) return `<div class="page-head"><p class="page-eyebrow">Long-Term Plans</p><h1 class="page-title">Curriculum overview by class</h1></div><p class="empty-note">No classes to show. You can bring back removed classes in Settings.</p>`;
   if(!state.planClass || !codes.includes(state.planClass)) state.planClass = codes[0];
   const active = state.planClass;
   const info = classInfo(active);
@@ -1538,9 +2515,7 @@ function renderPlans(){
       <p class="page-eyebrow">Long-Term Plans</p>
       <h1 class="page-title">Curriculum overview by class</h1>
     </div>
-    <div class="class-tabs">
-      ${codes.map(c=>`<button class="class-tab ${c===active?'active':''}" data-class="${c}"><span class="cc-dot cc-${classInfo(c).color}"></span> ${escapeHtml(classInfo(c).label)}</button>`).join('')}
-    </div>
+    ${renderClassTabs(codes, active)}
     <div class="card" style="padding:22px 24px;margin-bottom:20px;">
       <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;">
         <div style="flex:1;min-width:200px;">
@@ -1570,8 +2545,26 @@ function renderSettings(){
   return `
     <div class="page-head">
       <p class="page-eyebrow">Settings</p>
-      <h1 class="page-title">Data & backup</h1>
+      <h1 class="page-title">Appearance & data</h1>
     </div>
+
+    <div class="card settings-block">
+      <h3>Colour theme</h3>
+      <p>Changes the colours across the whole planner. It's saved with your data, so it follows you to other devices.</p>
+      ${renderThemePicker()}
+    </div>
+
+    <div class="card settings-block">
+      <h3>Automatic commutes</h3>
+      <p>Adds a commute to break or lunch when your lesson before is on the main site and the one after is on the Y7 &amp; 8 site, or the other way round. Year 7 and 8 classes are spotted from class codes starting with 7 or 8.</p>
+      <label class="hw-tick" style="font-size:13.5px;"><input type="checkbox" id="auto-commute-toggle" ${store.autoCommute?'checked':''}> Add commutes automatically</label>
+    </div>
+
+    ${store.hiddenClasses.length? `<div class="card settings-block">
+      <h3>Removed classes</h3>
+      <p>These are hidden from Classes, Homework Timetable and Long-Term Plans. Their notes and plans are still saved.</p>
+      <div class="restore-list">${store.hiddenClasses.map(c=>`<span class="restore-item"><span class="cc-dot cc-${classInfo(c).color}"></span>${escapeHtml(classInfo(c).label)} <button type="button" class="btn btn-sm" data-restore-class="${escapeHtml(c)}">Restore</button></span>`).join('')}</div>
+    </div>` : ''}
 
     <div class="card settings-block">
       <h3>Google Drive sync</h3>
@@ -1628,7 +2621,7 @@ function openLessonModal(dateISO, periodKey){
   if(asSecondOf){
     const leadSlot = getSlotForDate(dateISO, asSecondOf[0]);
     const thisSlot = getSlotForDate(dateISO, periodKey);
-    if(leadSlot && thisSlot && leadSlot.double && thisSlot.double && leadSlot.class===thisSlot.class && leadSlot.room===thisSlot.room){
+    if(isDoubleSlots(leadSlot, thisSlot)){
       periodKey = asSecondOf[0];
     }
   }
@@ -2135,6 +3128,61 @@ function attachRouteHandlers(){
     });
   }
 
+  if(state.route==='classes'){
+    document.querySelectorAll('.class-tab').forEach(el=>{
+      el.addEventListener('click', ()=>{ state.classesCode = el.dataset.class; render(); });
+    });
+    document.querySelectorAll('[data-cls-filter]').forEach(el=>{
+      el.addEventListener('click', ()=>{ state.classesFilter = el.dataset.clsFilter; render(); });
+    });
+    document.querySelectorAll('.cls-lesson').forEach(el=>{
+      el.addEventListener('click', ()=>openLessonModal(el.dataset.date, el.dataset.period));
+    });
+  }
+
+  if(state.route==='homework'){
+    document.getElementById('hw-edit-toggle').onclick = ()=>{
+      state.editingHomework = !state.editingHomework;
+      if(state.editingHomework) state.hwWeek = weekTypeFor(state.hwMonday) || 'A';
+      render();
+    };
+    if(state.editingHomework){
+      document.querySelectorAll('[data-hw-week]').forEach(el=>{
+        el.addEventListener('click', ()=>{ state.hwWeek = el.dataset.hwWeek; render(); });
+      });
+      const save = debounce(()=>persist(), 400);
+      document.querySelectorAll('.hw-input').forEach(el=>{
+        el.addEventListener('input', ()=>{ setHomework(state.hwWeek, el.dataset.class, el.dataset.day, el.value.trim()); save(); });
+      });
+      document.getElementById('hw-copy').onclick = ()=>{
+        const from = state.hwWeek, to = from==='A'?'B':'A';
+        if(Object.keys(store.homework[to]).length && !confirm(`Replace everything in Week ${to} with Week ${from}?`)) return;
+        store.homework[to] = JSON.parse(JSON.stringify(store.homework[from]));
+        persist();
+        showToast(`Copied Week ${from} to Week ${to}`);
+      };
+    }else{
+      document.getElementById('hw-prev').onclick = ()=>{ state.hwMonday = addDays(state.hwMonday,-7); render(); };
+      document.getElementById('hw-next').onclick = ()=>{ state.hwMonday = addDays(state.hwMonday,7); render(); };
+      document.getElementById('hw-today').onclick = ()=>{ state.hwMonday = getMonday(new Date()); render(); };
+      const refreshSummary = ()=>{ const el = document.getElementById('hw-summary'); if(el) el.textContent = hwSummaryText(state.hwMonday); };
+      document.querySelectorAll('.hw-slot').forEach(cell=>{
+        const iso = cell.dataset.iso, code = cell.dataset.class;
+        const box = cell.querySelector('.hw-content');
+        box.addEventListener('input', debounce(()=>{ setHwWork(iso, code, {content: box.value.trim()}); persist(); }, 400));
+        cell.querySelectorAll(':scope > .hw-tick input').forEach(cb=>{
+          cb.addEventListener('change', ()=>{
+            setHwWork(iso, code, {[cb.dataset.field]: cb.checked});
+            persist();
+            const wk = getHwWork(iso, code);
+            cell.classList.toggle('hw-done', wk.created && wk.smhw);
+            refreshSummary();
+          });
+        });
+      });
+    }
+  }
+
   if(state.route==='plans'){
     document.querySelectorAll('.class-tab').forEach(el=>{
       el.addEventListener('click', ()=>{ state.planClass = el.dataset.class; render(); });
@@ -2170,6 +3218,11 @@ function attachRouteHandlers(){
   }
 
   if(state.route==='settings'){
+    const acToggle = document.getElementById('auto-commute-toggle');
+    if(acToggle) acToggle.onchange = ()=>{ store.autoCommute = acToggle.checked; persist(); showToast(acToggle.checked ? 'Automatic commutes on' : 'Automatic commutes off'); };
+    document.querySelectorAll('[data-theme-key]').forEach(el=>{
+      el.addEventListener('click', ()=>{ store.theme = el.dataset.themeKey; persist(); render(); });
+    });
     document.getElementById('export-btn').onclick = exportData;
     document.getElementById('import-file').onchange = importData;
     document.getElementById('open-setup-btn').onclick = ()=>{ setupDraft = null; setupUi.editing = true; navigate('setup'); };
@@ -2204,6 +3257,10 @@ function saveTimetableEdits(){
     }else{
       store.timetableOverrides[wType][day][periodKey] = {class: cls, room: room};
     }
+  });
+  const wTypeAct = weekTypeFor(state.weekViewMonday);
+  document.querySelectorAll('[data-act-day]').forEach(el=>{
+    setTemplateActivity(wTypeAct, el.dataset.actDay, el.dataset.actSlot, el.querySelector('.act-type').value, el.querySelector('.act-text').value.trim());
   });
   persist();
   showToast('Timetable updated');
@@ -2244,33 +3301,19 @@ function importData(e){
 }
 
 /* ======================================================================
-   AUTO-HIDING NAV — hides the sidebar / top bar on scroll-down, reveals
-   it again on scroll-up (or via the small reveal button), so the content
-   area gets more room while reading a long page.
+   SHOW / HIDE MENU — on bigger screens the sidebar stays put while you
+   scroll. Tap the « button to tuck it away and the ☰ button to bring it
+   back. The choice is remembered on this device.
    ====================================================================== */
-(function initAutoHideNav(){
-  function currentY(){
-    return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+(function initNavToggle(){
+  const KEY = 'plannerNavHidden';
+  function setHidden(hidden){
+    document.body.classList.toggle('nav-hidden', hidden);
+    try{ localStorage.setItem(KEY, hidden ? '1' : '0'); }catch(e){}
   }
-  let lastY = currentY();
-  const THRESHOLD = 10;   // ignore tiny scroll jitter
-  const TOP_ZONE = 60;    // always show near the very top of the page
-  function onScroll(){
-    const y = currentY();
-    if(y < TOP_ZONE){
-      document.body.classList.remove('nav-hidden');
-    }else if(y - lastY > THRESHOLD){
-      document.body.classList.add('nav-hidden');
-    }else if(lastY - y > THRESHOLD){
-      document.body.classList.remove('nav-hidden');
-    }
-    lastY = y;
-  }
-  window.addEventListener('scroll', onScroll, {passive:true});
-  document.addEventListener('scroll', onScroll, {passive:true});
-  document.getElementById('nav-reveal').addEventListener('click', ()=>{
-    document.body.classList.remove('nav-hidden');
-  });
+  try{ if(localStorage.getItem(KEY)==='1') document.body.classList.add('nav-hidden'); }catch(e){}
+  document.getElementById('nav-collapse').addEventListener('click', ()=>setHidden(true));
+  document.getElementById('nav-reveal').addEventListener('click', ()=>setHidden(false));
 })();
 
 /* ======================================================================
@@ -2286,10 +3329,14 @@ const DRIVE_LEGACY_FILENAME = 'andy-brooks-planner-data.json'; // files created 
 
 let gTokenClient = null;
 let gAccessToken = null;
+let gTokenExpiry = 0;          // when the current access token stops working (Google tokens last ~1 hour)
+let gTokenWaiters = [];        // syncs waiting for a refreshed token
 let driveFileId = localStorage.getItem('plannerDriveFileId') || null;
 let driveSignedIn = false;
 let driveEmail = localStorage.getItem('plannerDriveEmail') || '';
 let driveBusy = false;
+let driveSyncAgain = false;    // an edit arrived while a sync was running, so run another straight after
+const DRIVE_BASE_KEY = 'plannerDriveBase'; // copy of the Drive file as of this device's last sync, for merging
 
 function waitForGoogleIdentity(cb, tries){
   tries = tries||0;
@@ -2304,22 +3351,48 @@ function driveInit(){
       client_id: GOOGLE_CLIENT_ID,
       scope: DRIVE_SCOPE,
       callback: (resp)=>{
-        driveBusy = false;
+        const waiters = gTokenWaiters; gTokenWaiters = [];
+        if(!waiters.length) driveBusy = false; // a sync waiting on this refresh still owns driveBusy
         if(resp.error){
-          driveSignedIn = false;
+          gAccessToken = null; gTokenExpiry = 0;
+          if(!waiters.length) driveSignedIn = false;
+          waiters.forEach(fn=>fn(false));
           if(state.route==='settings' || state.route==='setup') render();
           return;
         }
         gAccessToken = resp.access_token;
+        gTokenExpiry = Date.now() + ((Number(resp.expires_in)||3600) - 120) * 1000;
         driveSignedIn = true;
         localStorage.setItem('plannerDriveConnected','1');
+        if(waiters.length){ waiters.forEach(fn=>fn(true)); return; } // a silent refresh mid-sync
         fetchDriveProfile().then(()=>driveSyncNow(true));
+      },
+      error_callback: ()=>{
+        // Pop-up blocked or closed: let any waiting sync give up rather than hang.
+        const waiters = gTokenWaiters; gTokenWaiters = [];
+        if(!waiters.length) driveBusy = false;
+        waiters.forEach(fn=>fn(false));
+        if(state.route==='settings' || state.route==='setup') render();
       }
     });
     if(localStorage.getItem('plannerDriveConnected')==='1'){
+      driveSignedIn = true; // remembered; the token arrives in the callback
       driveBusy = true;
       gTokenClient.requestAccessToken({prompt:''});
     }
+  });
+}
+// Make sure we hold a working token, quietly renewing it when the hour is up.
+function ensureDriveToken(){
+  if(gAccessToken && Date.now() < gTokenExpiry) return Promise.resolve(true);
+  if(!gTokenClient) return Promise.resolve(false);
+  return new Promise(res=>{
+    gTokenWaiters.push(res);
+    if(gTokenWaiters.length===1){
+      try{ gTokenClient.requestAccessToken({prompt:''}); }
+      catch(e){ const w = gTokenWaiters; gTokenWaiters = []; w.forEach(fn=>fn(false)); }
+    }
+    setTimeout(()=>{ const i = gTokenWaiters.indexOf(res); if(i>=0){ gTokenWaiters.splice(i,1); res(false); } }, 30000);
   });
 }
 function driveSignIn(){
@@ -2386,43 +3459,101 @@ async function driveUpload(content){
     headers: driveHeaders({'Content-Type':'application/json'}),
     body: content
   });
-  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); await driveCreateFile(content); }
+  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); await driveCreateFile(content); return; }
+  if(res.status===401) throw new Error('auth');
+  if(!res.ok) throw new Error('Drive upload failed: '+res.status);
 }
 async function driveDownload(){
   if(!driveFileId){
     const found = await driveFindFile();
     if(!found) return null;
   }
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {headers:driveHeaders()});
-  if(!res.ok) return null;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {headers:driveHeaders(), cache:'no-store'});
+  if(res.status===401) throw new Error('auth');
+  if(res.status===404){ driveFileId=null; localStorage.removeItem('plannerDriveFileId'); return null; }
+  if(!res.ok) throw new Error('Drive download failed: '+res.status);
   return await res.text();
 }
+
+/* ---- Merging two devices' changes ----
+   Each device remembers what the Drive file looked like when it last synced
+   (the "base"). On sync, anything changed on only one side is kept, so a to-do
+   ticked on the tablet and one added on the phone both survive. Only when the
+   very same item was changed on both does the more recent device win. */
+const NO_BASE = {};
+function syncIsObj(x){ return x!==null && typeof x==='object' && !Array.isArray(x); }
+function syncEq(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+function syncClone(x){ return x===undefined ? undefined : JSON.parse(JSON.stringify(x)); }
+function syncIsIdList(a){ return Array.isArray(a) && a.every(x=>syncIsObj(x) && x.id!==undefined); }
+function mergeValues(base, local, remote, localWins){
+  if(syncEq(local, remote)) return syncClone(local);
+  if(base!==NO_BASE){
+    if(syncEq(base, local)) return syncClone(remote);   // only the other device changed it
+    if(syncEq(base, remote)) return syncClone(local);   // only this device changed it
+  }else{
+    if(local===undefined) return syncClone(remote);     // first sync: keep anything either side has
+    if(remote===undefined) return syncClone(local);
+  }
+  if(syncIsObj(local) && syncIsObj(remote)){
+    const out = {};
+    const b = base===NO_BASE ? NO_BASE : (syncIsObj(base) ? base : {});
+    new Set([...Object.keys(local), ...Object.keys(remote)]).forEach(k=>{
+      const v = mergeValues(b===NO_BASE ? NO_BASE : b[k], local[k], remote[k], localWins);
+      if(v!==undefined) out[k] = v;
+    });
+    return out;
+  }
+  if(syncIsIdList(local) && syncIsIdList(remote)){
+    const byId = arr=>{ const m = new Map(); arr.forEach(x=>m.set(String(x.id), x)); return m; };
+    const L = byId(local), R = byId(remote);
+    const B = base===NO_BASE ? null : byId(syncIsIdList(base) ? base : []);
+    const order = [...L.keys()]; R.forEach((_,id)=>{ if(!L.has(id)) order.push(id); });
+    const out = [];
+    order.forEach(id=>{
+      const v = mergeValues(B ? B.get(id) : NO_BASE, L.get(id), R.get(id), localWins);
+      if(v!==undefined) out.push(v);
+    });
+    return out;
+  }
+  return syncClone(localWins ? local : remote);   // changed on both: newest device wins
+}
+function mergeStores(base, local, remote){
+  const localWins = (local.lastModified||0) >= (remote.lastModified||0);
+  const strip = o=>{ const c = Object.assign({}, o); delete c.lastModified; return c; };
+  const merged = mergeValues(base ? strip(base) : NO_BASE, strip(local), strip(remote), localWins);
+  merged.lastModified = Math.max(local.lastModified||0, remote.lastModified||0);
+  return normalizeStore(merged);
+}
+function storesDiffer(a, b){
+  const x = Object.assign({}, a), y = Object.assign({}, b);
+  delete x.lastModified; delete y.lastModified;
+  return !syncEq(x, y);
+}
+function userIsTyping(){
+  const el = document.activeElement;
+  return !!(el && (el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && !/^(checkbox|radio|button|submit)$/i.test(el.type)) || el.isContentEditable));
+}
+let renderAfterTyping = false;
+document.addEventListener('focusout', ()=>{
+  setTimeout(()=>{ if(renderAfterTyping && !userIsTyping()){ renderAfterTyping = false; render(); } }, 300);
+});
+
 async function driveSyncNow(silent){
-  if(!gAccessToken){ if(!silent) showToast('Not signed in to Google.'); return; }
+  if(!driveSignedIn && !gAccessToken){ if(!silent) showToast('Not signed in to Google.'); return; }
+  if(driveBusy){ driveSyncAgain = true; return; }
   driveBusy = true;
   if(state.route==='settings' || state.route==='setup') render();
   try{
-    const remoteText = await driveDownload();
-    if(remoteText){
-      const remote = JSON.parse(remoteText);
-      const remoteTime = remote.lastModified||0;
-      const localTime = store.lastModified||0;
-      if(remoteTime > localTime){
-        store = normalizeStore(remote);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-        showToast('Loaded the latest version from Google Drive');
-        render();
-      }else if(localTime > remoteTime && !needsSetup()){
-        await driveUpload(JSON.stringify(store));
-        showToast('Backed up to Google Drive');
-      }else if(!silent){
-        showToast('Already up to date');
+    for(let attempt=0; attempt<2; attempt++){
+      if(!(await ensureDriveToken())){
+        if(!silent) showToast('Google sign-in has expired — tap Sync now to reconnect.');
+        break;
       }
-    }else if(!needsSetup()){
-      await driveUpload(JSON.stringify(store));
-      showToast('Backed up to Google Drive');
-    }else if(!silent){
-      showToast('No saved planner found in this Google account yet — fill in the setup below.');
+      try{ await driveSyncOnce(silent); break; }
+      catch(err){
+        if(err && err.message==='auth' && attempt===0){ gTokenExpiry = 0; continue; } // token ran out: renew and retry
+        throw err;
+      }
     }
   }catch(err){
     console.error(err);
@@ -2430,7 +3561,68 @@ async function driveSyncNow(silent){
   }
   driveBusy = false;
   if(state.route==='settings' || state.route==='setup') render();
+  if(driveSyncAgain){ driveSyncAgain = false; setTimeout(()=>driveSyncNow(true), 500); }
 }
+async function driveSyncOnce(silent){
+  const remoteText = await driveDownload();
+  if(!remoteText){
+    if(!needsSetup()){
+      const out = JSON.stringify(store);
+      await driveUpload(out);
+      localStorage.setItem(DRIVE_BASE_KEY, out);
+      showToast('Backed up to Google Drive');
+    }else if(!silent){
+      showToast('No saved planner found in this Google account yet — fill in the setup below.');
+    }
+    return;
+  }
+  const remote = normalizeStore(JSON.parse(remoteText));
+  // A brand-new device (nothing set up here yet) simply takes what's in Drive.
+  if(needsSetup() || !(store.lastModified>0)){
+    store = remote;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(DRIVE_BASE_KEY, remoteText);
+    showToast('Loaded your planner from Google Drive');
+    render();
+    return;
+  }
+  let base = null;
+  try{ const t = localStorage.getItem(DRIVE_BASE_KEY); if(t) base = normalizeStore(JSON.parse(t)); }catch(e){ base = null; }
+  const merged = mergeStores(base, store, remote);
+  const localChanged = storesDiffer(merged, store);
+  const remoteChanged = storesDiffer(merged, remote);
+  if(remoteChanged) merged.lastModified = Date.now();
+  store = merged;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  if(remoteChanged){
+    const out = JSON.stringify(store);
+    try{
+      await driveUpload(out);
+      localStorage.setItem(DRIVE_BASE_KEY, out);
+    }catch(err){
+      localStorage.setItem(DRIVE_BASE_KEY, remoteText); // Drive still holds the old copy
+      throw err;
+    }
+  }else{
+    localStorage.setItem(DRIVE_BASE_KEY, remoteText);
+  }
+  if(localChanged){
+    showToast('Synced changes from your other device');
+    if(userIsTyping()) renderAfterTyping = true; else render();
+  }else if(remoteChanged){
+    showToast('Backed up to Google Drive');
+  }else if(!silent){
+    showToast('Already up to date');
+  }
+}
+// Check Drive whenever the planner comes back on screen, and every couple of minutes while it's open.
+const driveCheckSoon = debounce(()=>{
+  if(driveSignedIn && document.visibilityState==='visible' && !needsSetup()) driveSyncNow(true);
+}, 800);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') driveCheckSoon(); });
+window.addEventListener('focus', driveCheckSoon);
+window.addEventListener('online', driveCheckSoon);
+setInterval(driveCheckSoon, 2*60*1000);
 
 /* ======================================================================
    INIT
